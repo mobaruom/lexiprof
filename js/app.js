@@ -91,6 +91,24 @@ function render() {
       </div>`;
     return;
   }
+document.addEventListener("click", function(e){
+
+  if(e.target.classList.contains("qcm-btn")){
+
+    const btn = e.target;
+
+    if(btn.dataset.correct === "true"){
+      btn.style.background="#22c55e";
+      btn.style.color="white";
+    }
+    else{
+      btn.style.background="#ef4444";
+      btn.style.color="white";
+    }
+
+  }
+
+});
 
   container.innerHTML = filtered.map(d => `
 <div class="card">
