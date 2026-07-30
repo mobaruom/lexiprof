@@ -93,39 +93,53 @@ function render() {
   }
 
   container.innerHTML = filtered.map(d => `
-    <div class="card">
+<div class="card">
 
-      <div class="card-top">
-        <div class="card-term">${highlight(d.term, q)}</div>
-        <span class="matiere-badge badge-${d.matiere}">${d.matiere}</span>
-      </div>
-
-      <div class="card-def">
-        ${highlight(d.def, q)}
-      </div>
-
-      <div class="card-section">
-        <div class="section-title">💡 Exemple concret</div>
-        <div class="section-content">
-          ${d.example || "Aucun exemple disponible."}
-        </div>
-      </div>
-
-      <div class="card-section">
-        <div class="section-title">📝 À retenir</div>
-        <div class="section-content">
-          ${d.remember || "Aucun résumé disponible."}
-        </div>
-      </div>
-
-      <div class="card-section">
-        <div class="section-title">❓ Mini QCM</div>
-        <div class="section-content">
-          ${d.qcm?.question || "Aucun QCM disponible."}
-        </div>
-      </div>
-
+    <div class="card-top">
+        <div class="card-term">${highlight(d.term,q)}</div>
+        <span class="matiere-badge badge-${d.matiere}">
+            ${d.matiere}
+        </span>
     </div>
+
+    <div class="card-def">
+        ${highlight(d.def,q)}
+    </div>
+
+    ${d.example ? `
+    <details class="card-details">
+        <summary>💡 Exemple concret</summary>
+        <div class="details-content">
+            ${d.example}
+        </div>
+    </details>
+    ` : ""}
+
+    ${d.remember ? `
+    <details class="card-details">
+        <summary>📝 À retenir</summary>
+        <div class="details-content">
+            ${d.remember}
+        </div>
+    </details>
+    ` : ""}
+
+    ${d.qcm ? `
+    <details class="card-details">
+        <summary>❓ Mini QCM</summary>
+        <div class="details-content">
+
+            <p>${d.qcm.question}</p>
+
+            ${d.qcm.answers.map(a=>`
+                <button class="qcm-btn">${a}</button>
+            `).join("")}
+
+        </div>
+    </details>
+    ` : ""}
+
+</div>
 `).join('');
 }
 
