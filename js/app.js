@@ -1,3 +1,6 @@
+// ==================================================
+// CONFIGURATION
+// ==================================================
 const BIN_ID     = '69f31bf4aaba882197556e92';
 const ACCESS_KEY = '$2a$10$bC.x0kcg6YXik32STxh46eVPotxbT4crJZk52XLnrHA5i7kkt1RbC';
 const BIN_URL    = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
@@ -6,6 +9,10 @@ const HEADERS_W  = { 'X-Access-Key': ACCESS_KEY, 'Content-Type': 'application/js
 const PWD_KEY    = 'lexiprof_admin_pwd';
 const DEFAULT_PW = 'admin123';
 
+
+// ==================================================
+// DONNÉES
+// ==================================================
 const defaultData = [
   { id:1, term:"Management",      matiere:"Management", def:"Ensemble des techniques de direction, d'organisation et de gestion d'une entreprise visant à atteindre des objectifs fixés en utilisant efficacement les ressources disponibles." },
   { id:2, term:"Leadership",      matiere:"Management", def:"Capacité d'une personne à guider, influencer et motiver un groupe d'individus vers la réalisation d'objectifs communs, en inspirant confiance et adhésion." },
@@ -18,11 +25,17 @@ const defaultData = [
   { id:9, term:"GPEC",            matiere:"RH",         def:"Gestion Prévisionnelle des Emplois et des Compétences. Démarche prospective visant à anticiper les besoins en ressources humaines d'une organisation à moyen terme afin d'adapter les effectifs et les compétences." },
 ];
 
+
+// ==================================================
+// ÉTAT DE L'APPLICATION
+// ==================================================
 let definitions = [];
 let currentFilter = 'all';
 let searchQuery = '';
 
-// ── JSONBIN ───────────────────────────────────────────────
+// ==================================================
+// STOCKAGE (JSONBIN)
+// ==================================================
 async function load() {
   setLoading(true);
   try {
@@ -68,7 +81,9 @@ function getPassword() {
   return localStorage.getItem(PWD_KEY) || DEFAULT_PW;
 }
 
-// ── UI ────────────────────────────────────────────────────
+// ==================================================
+// INTERFACE UTILISATEUR
+// ==================================================
 function setLoading(on) {
   if (on) {
     document.getElementById('cardsContainer').innerHTML = `
@@ -119,6 +134,11 @@ function render() {
   `).join('');
 }
 
+
+
+// ==================================================
+// RECHERCHE
+// ==================================================
 function onSearch() {
   searchQuery = document.getElementById('searchInput').value;
   render();
@@ -131,7 +151,11 @@ function setFilter(filter, btn) {
   render();
 }
 
-// ── PASSWORD ──────────────────────────────────────────────
+
+
+// ==================================================
+// AUTHENTIFICATION
+// ==================================================
 function openAdmin() {
   document.getElementById('pwdInput').value = '';
   document.getElementById('pwdError').textContent = '';
@@ -158,7 +182,12 @@ function checkPassword() {
   }
 }
 
-// ── ADMIN ─────────────────────────────────────────────────
+
+
+
+// ==================================================
+// ADMINISTRATION
+// ==================================================
 function openAdminPanel() {
   renderAdminList();
   document.getElementById('changePwdForm').classList.remove('open');
@@ -235,6 +264,12 @@ function changePassword() {
   showToast('🔑 Mot de passe mis à jour !');
 }
 
+
+
+
+// ==================================================
+// NOTIFICATIONS
+// ==================================================
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
