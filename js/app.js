@@ -149,9 +149,13 @@ document.addEventListener("click", function(e){
 
             <p>${d.qcm.question}</p>
 
-            ${d.qcm.answers.map(a=>`
-                <button class="qcm-btn">${a}</button>
-            `).join("")}
+          ${d.qcm.answers.map(a=>`
+<button 
+class="qcm-btn"
+data-correct="${a.correct}">
+${a.text}
+</button>
+`).join("")}
 
         </div>
     </details>
