@@ -94,13 +94,39 @@ function render() {
 
   container.innerHTML = filtered.map(d => `
     <div class="card">
+
       <div class="card-top">
         <div class="card-term">${highlight(d.term, q)}</div>
         <span class="matiere-badge badge-${d.matiere}">${d.matiere}</span>
       </div>
-      <div class="card-def">${highlight(d.def, q)}</div>
+
+      <div class="card-def">
+        ${highlight(d.def, q)}
+      </div>
+
+      <div class="card-section">
+        <div class="section-title">💡 Exemple concret</div>
+        <div class="section-content">
+          ${d.example || "Aucun exemple disponible."}
+        </div>
+      </div>
+
+      <div class="card-section">
+        <div class="section-title">📝 À retenir</div>
+        <div class="section-content">
+          ${d.remember || "Aucun résumé disponible."}
+        </div>
+      </div>
+
+      <div class="card-section">
+        <div class="section-title">❓ Mini QCM</div>
+        <div class="section-content">
+          ${d.qcm?.question || "Aucun QCM disponible."}
+        </div>
+      </div>
+
     </div>
-  `).join('');
+`).join('');
 }
 
 
