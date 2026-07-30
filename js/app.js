@@ -269,4 +269,5 @@ function showToast(msg) {
   t._t = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+console.log("app.js chargé !");
 load();
