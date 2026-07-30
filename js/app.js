@@ -5,7 +5,23 @@
 // DONNÉES
 // ==================================================
 const defaultData = [
-  { id:1, term:"Management",      matiere:"Management", def:"Ensemble des techniques de direction, d'organisation et de gestion d'une entreprise visant à atteindre des objectifs fixés en utilisant efficacement les ressources disponibles." },
+  {
+  id:1,
+  term:"Management",
+  matiere:"Management",
+
+  def:"Ensemble des techniques...",
+
+  example:"",
+
+  remember:"",
+
+  qcm:{
+    question:"",
+    choices:["","",""],
+    answer:0
+  }
+},
   { id:2, term:"Leadership",      matiere:"Management", def:"Capacité d'une personne à guider, influencer et motiver un groupe d'individus vers la réalisation d'objectifs communs, en inspirant confiance et adhésion." },
   { id:3, term:"Organigramme",    matiere:"Management", def:"Représentation graphique de la structure hiérarchique et fonctionnelle d'une organisation, montrant les liens d'autorité et de communication entre les différents postes." },
   { id:4, term:"Contrat de travail", matiere:"Droit",   def:"Convention par laquelle une personne (le salarié) s'engage à travailler pour le compte et sous la direction d'une autre personne (l'employeur) en échange d'une rémunération." },
