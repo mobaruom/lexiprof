@@ -789,3 +789,24 @@
 }
 
 }
+
+img{
+    user-select:none;
+    -webkit-user-drag:none;
+}
+
+.card{
+    will-change:transform;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+*{
+    transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease;
+}
