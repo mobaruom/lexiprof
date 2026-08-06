@@ -365,7 +365,7 @@ function copyDefinition(term, def) {
     showToast('📋 Copié dans le presse-papiers');
   }).catch(() => {
     showToast('❌ Impossible de copier');
-n  });
+  });
 }
 
 // ==================================================
@@ -429,7 +429,7 @@ let flashcardRevealed = false;
 
 function openFlashcard() {
   const q = searchQuery.toLowerCase().trim();
-n  let filtered = definitions;
+  let filtered = definitions;
   if (currentFilter !== 'all') {
     if (currentFilter === 'favorites') {
       const favs = getFavorites();
@@ -439,7 +439,7 @@ n  let filtered = definitions;
     }
   }
   if (q) filtered = filtered.filter(d => d.term.toLowerCase().includes(q) || d.def.toLowerCase().includes(q));
-n  if (!filtered.length) { showToast('⚠️ Aucune définition pour le mode flashcard'); return; }
+  if (!filtered.length) { showToast('⚠️ Aucune définition pour le mode flashcard'); return; }
 
   flashcardDefs = filtered.sort((a, b) => a.term.localeCompare(b.term, 'fr'));
   flashcardIndex = 0;
@@ -491,6 +491,7 @@ function prevFlashcard() {
   flashcardIndex = (flashcardIndex - 1 + flashcardDefs.length) % flashcardDefs.length;
   renderFlashcard();
 }
+
 // ==================================================
 // RENDU
 // ==================================================
