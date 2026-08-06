@@ -1,5 +1,5 @@
 // ==================================================
-// DONNÉES PAR DÉFAUT (QCM corrigé)
+// DONNÉES PAR DÉFAUT
 // ==================================================
 const defaultData = [
   {
@@ -9,6 +9,7 @@ const defaultData = [
     def: "Ensemble des techniques de direction, de coordination et de contrôle permettant à une organisation d'atteindre ses objectifs de manière efficace et efficiente.",
     example: "Le management d'une entreprise implique de planifier les stratégies, organiser les ressources, diriger les équipes et contrôler les résultats.",
     remember: "Penser au cycle PDCA : Planifier, Déployer, Contrôler, Ajuster.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Quel est le rôle principal du management ?",
       answers: [
@@ -25,6 +26,7 @@ const defaultData = [
     def: "Capacité d'une personne à guider, influencer et motiver un groupe d'individus vers la réalisation d'objectifs communs, en inspirant confiance et adhésion.",
     example: "Un bon leader sait écouter son équipe, communiquer une vision claire et donner l'exemple.",
     remember: "Le leader inspire, le manager organise.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Quelle est la différence clé entre un leader et un manager ?",
       answers: [
@@ -41,6 +43,7 @@ const defaultData = [
     def: "Représentation graphique de la structure hiérarchique et fonctionnelle d'une organisation, montrant les liens d'autorité et de communication entre les différents postes.",
     example: "L'organigramme d'une entreprise montre le PDG en haut, puis les directeurs, les chefs de service et les employés.",
     remember: "Organigramme = organe + gramme (dessin des organes de l'entreprise).",
+    createdAt: "2024-01-01",
     qcm: {
       question: "À quoi sert un organigramme ?",
       answers: [
@@ -57,6 +60,7 @@ const defaultData = [
     def: "Convention par laquelle une personne (le salarié) s'engage à travailler pour le compte et sous la direction d'une autre personne (l'employeur) en échange d'une rémunération.",
     example: "Un CDI est un contrat à durée indéterminée, tandis qu'un CDD a une date de fin fixée dès le départ.",
     remember: "CDI = Contrat Durée Indéterminée, CDD = Contrat Durée Déterminée.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Quel est l'élément essentiel d'un contrat de travail ?",
       answers: [
@@ -73,6 +77,7 @@ const defaultData = [
     def: "Entité juridique distincte des personnes physiques qui la composent, dotée de droits et d'obligations propres, telle qu'une société, une association ou une collectivité publique.",
     example: "Une SARL est une personne morale qui peut signer des contrats, posséder des biens et être poursuivie en justice.",
     remember: "Personne physique = toi, moi. Personne morale = l'entreprise, l'association.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Quelle entité est une personne morale ?",
       answers: [
@@ -89,6 +94,7 @@ const defaultData = [
     def: "Produit Intérieur Brut. Indicateur macroéconomique mesurant la valeur totale des biens et services produits sur le territoire national au cours d'une période donnée.",
     example: "Si le PIB de la France augmente de 2%, cela signifie que l'économie française a créé 2% de richesse supplémentaire.",
     remember: "PIB = Production Intérieure Brute (ce que le pays produit).",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Que mesure le PIB ?",
       answers: [
@@ -105,6 +111,7 @@ const defaultData = [
     def: "Hausse généralisée et durable du niveau des prix des biens et services dans une économie, entraînant une diminution du pouvoir d'achat de la monnaie.",
     example: "Avec une inflation de 5%, un produit qui coûtait 100€ l'année dernière coûtera 105€ cette année.",
     remember: "Inflation = les prix montent, ton pouvoir d'achat descend.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Quel est l'effet principal de l'inflation ?",
       answers: [
@@ -121,6 +128,7 @@ const defaultData = [
     def: "Processus par lequel une organisation identifie, attire et sélectionne des candidats qualifiés pour pourvoir un poste vacant, en adéquation avec ses besoins et sa culture d'entreprise.",
     example: "Le recrutement peut passer par des annonces en ligne, des cabinets de recrutement ou du cooptage (recommandation interne).",
     remember: "Recrutement = trouver la bonne personne au bon poste.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "Quel est l'objectif du recrutement ?",
       answers: [
@@ -137,6 +145,7 @@ const defaultData = [
     def: "Gestion Prévisionnelle des Emplois et des Compétences. Démarche prospective visant à anticiper les besoins en ressources humaines d'une organisation à moyen terme afin d'adapter les effectifs et les compétences.",
     example: "Une entreprise qui prévoit de se digitaliser va anticiper le besoin de former ses employés aux nouveaux outils numériques.",
     remember: "GPEC = regarder dans le futur pour préparer les RH d'aujourd'hui.",
+    createdAt: "2024-01-01",
     qcm: {
       question: "La GPEC vise à :",
       answers: [
@@ -149,11 +158,12 @@ const defaultData = [
 ];
 
 // ==================================================
-// ÉTAT DE L'APPLICATION
+// ÉTAT
 // ==================================================
 let definitions = [];
 let currentFilter = 'all';
 let searchQuery = '';
+let editingId = null;
 
 // ==================================================
 // FAVORIS
@@ -171,12 +181,9 @@ function toggleFavorite(id) {
   render();
   showToast(idx > -1 ? '☆ Retiré des favoris' : '★ Ajouté aux favoris');
 }
-function isFavorite(id) {
-  return getFavorites().includes(id);
-}
 
 // ==================================================
-// HISTORIQUE DE RECHERCHE
+// HISTORIQUE
 // ==================================================
 function getSearchHistory() {
   const raw = localStorage.getItem('lexiprof_search_history');
@@ -214,6 +221,7 @@ function setSearch(q) {
   onSearch();
 }
 function clearSearch() {
+  if (searchQuery.trim()) addToHistory(searchQuery);
   document.getElementById('searchInput').value = '';
   searchQuery = '';
   onSearch();
@@ -242,7 +250,7 @@ function updateThemeIcon(isDark) {
 }
 
 // ==================================================
-// COMPTEUR DE DÉFINITIONS
+// COMPTEUR
 // ==================================================
 function updateCounter(filteredCount) {
   const total = definitions.length;
@@ -252,6 +260,17 @@ function updateCounter(filteredCount) {
   } else {
     el.textContent = `${filteredCount} résultat${filteredCount !== 1 ? 's' : ''} sur ${total}`;
   }
+}
+
+// ==================================================
+// BADGE "NOUVEAU"
+// ==================================================
+function isNew(createdAt) {
+  if (!createdAt) return false;
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+  return diffDays <= 7;
 }
 
 // ==================================================
@@ -280,7 +299,7 @@ function highlight(text, q) {
 }
 
 // ==================================================
-// ANIMATION AU SCROLL (Intersection Observer)
+// SCROLL OBSERVER
 // ==================================================
 let scrollObserver;
 function initScrollObserver() {
@@ -298,6 +317,17 @@ function observeCards() {
   document.querySelectorAll('.card:not(.visible)').forEach((card, i) => {
     card.style.transitionDelay = `${Math.min(i * 60, 400)}ms`;
     scrollObserver.observe(card);
+  });
+}
+
+// ==================================================
+// SCROLL TO TOP
+// ==================================================
+function initScrollTop() {
+  const btn = document.getElementById('scrollTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) btn.classList.add('visible');
+    else btn.classList.remove('visible');
   });
 }
 
@@ -327,23 +357,23 @@ function fallbackShare(term, def) {
 }
 
 // ==================================================
-// EXPORT PDF
+// COPIER DÉFINITION
 // ==================================================
-function exportToPDF() {
-  const q = searchQuery.toLowerCase().trim();
-  let filtered = definitions;
-  if (currentFilter !== 'all') {
-    if (currentFilter === 'favorites') {
-      const favs = getFavorites();
-      filtered = filtered.filter(d => favs.includes(d.id));
-    } else {
-      filtered = filtered.filter(d => d.matiere === currentFilter);
-    }
-  }
-  if (q) filtered = filtered.filter(d => d.term.toLowerCase().includes(q) || d.def.toLowerCase().includes(q));
-  filtered.sort((a, b) => a.term.localeCompare(b.term, 'fr'));
+function copyDefinition(term, def) {
+  const text = `${term}\n\n${def}`;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('📋 Copié dans le presse-papiers');
+  }).catch(() => {
+    showToast('❌ Impossible de copier');
+n  });
+}
 
-  if (!filtered.length) { showToast('⚠️ Aucune définition à exporter'); return; }
+// ==================================================
+// EXPORT PDF PAR CARTE
+// ==================================================
+function exportCardToPDF(id) {
+  const d = definitions.find(x => x.id === id);
+  if (!d) return;
 
   const container = document.createElement('div');
   container.style.padding = '30px';
@@ -353,24 +383,22 @@ function exportToPDF() {
   container.innerHTML = `
     <div style="text-align:center; margin-bottom:30px;">
       <h1 style="font-family:'Lora',serif; font-size:28px; margin-bottom:8px;">LexiProf — Dictionnaire STMG</h1>
-      <p style="color:#7a7570; font-size:13px;">${filtered.length} définition${filtered.length !== 1 ? 's' : ''} — Exporté le ${new Date().toLocaleDateString('fr-FR')}</p>
+      <p style="color:#7a7570; font-size:13px;">Exporté le ${new Date().toLocaleDateString('fr-FR')}</p>
     </div>
-    ${filtered.map(d => `
-      <div style="margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid #e2ddd5;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-          <h2 style="font-family:'Lora',serif; font-size:18px; margin:0; color:#1a1814;">${d.term}</h2>
-          <span style="font-size:10px; font-weight:700; text-transform:uppercase; padding:3px 10px; border-radius:20px;
-            ${d.matiere === 'Management' ? 'background:#dbeafe; color:#2563a8;' : ''}
-            ${d.matiere === 'Droit' ? 'background:#fef3c7; color:#b45309;' : ''}
-            ${d.matiere === 'Économie' ? 'background:#dcfce7; color:#166534;' : ''}
-            ${d.matiere === 'RH' ? 'background:#ede9fe; color:#7c3aed;' : ''}
-          ">${d.matiere}</span>
-        </div>
-        <p style="font-size:14px; line-height:1.7; color:#3a3530; margin:0;">${d.def}</p>
-        ${d.example ? `<p style="font-size:13px; color:#7a7570; margin-top:8px; margin-bottom:0;"><strong>Exemple :</strong> ${d.example}</p>` : ''}
-        ${d.remember ? `<p style="font-size:13px; color:#7a7570; margin-top:8px; margin-bottom:0;"><strong>À retenir :</strong> ${d.remember}</p>` : ''}
+    <div style="margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid #e2ddd5;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+        <h2 style="font-family:'Lora',serif; font-size:18px; margin:0; color:#1a1814;">${d.term}</h2>
+        <span style="font-size:10px; font-weight:700; text-transform:uppercase; padding:3px 10px; border-radius:20px;
+          ${d.matiere === 'Management' ? 'background:#dbeafe; color:#2563a8;' : ''}
+          ${d.matiere === 'Droit' ? 'background:#fef3c7; color:#b45309;' : ''}
+          ${d.matiere === 'Économie' ? 'background:#dcfce7; color:#166534;' : ''}
+          ${d.matiere === 'RH' ? 'background:#ede9fe; color:#7c3aed;' : ''}
+        ">${d.matiere}</span>
       </div>
-    `).join('')}
+      <p style="font-size:14px; line-height:1.7; color:#3a3530; margin:0;">${d.def}</p>
+      ${d.example ? `<p style="font-size:13px; color:#7a7570; margin-top:8px; margin-bottom:0;"><strong>Exemple :</strong> ${d.example}</p>` : ''}
+      ${d.remember ? `<p style="font-size:13px; color:#7a7570; margin-top:8px; margin-bottom:0;"><strong>À retenir :</strong> ${d.remember}</p>` : ''}
+    </div>
     <div style="text-align:center; margin-top:30px; font-size:11px; color:#b0aba4;">
       LexiProf · mobaruom.github.io/lexiprof
     </div>
@@ -379,7 +407,7 @@ function exportToPDF() {
 
   html2pdf().set({
     margin: 10,
-    filename: `lexiprof-${currentFilter}-${new Date().toISOString().slice(0,10)}.pdf`,
+    filename: `lexiprof-${d.term.toLowerCase().replace(/\\s+/g, '-')}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -390,6 +418,78 @@ function exportToPDF() {
     document.body.removeChild(container);
     showToast('❌ Erreur export PDF');
   });
+}
+
+// ==================================================
+// FLASHCARD
+// ==================================================
+let flashcardDefs = [];
+let flashcardIndex = 0;
+let flashcardRevealed = false;
+
+function openFlashcard() {
+  const q = searchQuery.toLowerCase().trim();
+n  let filtered = definitions;
+  if (currentFilter !== 'all') {
+    if (currentFilter === 'favorites') {
+      const favs = getFavorites();
+      filtered = filtered.filter(d => favs.includes(d.id));
+    } else {
+      filtered = filtered.filter(d => d.matiere === currentFilter);
+    }
+  }
+  if (q) filtered = filtered.filter(d => d.term.toLowerCase().includes(q) || d.def.toLowerCase().includes(q));
+n  if (!filtered.length) { showToast('⚠️ Aucune définition pour le mode flashcard'); return; }
+
+  flashcardDefs = filtered.sort((a, b) => a.term.localeCompare(b.term, 'fr'));
+  flashcardIndex = 0;
+  flashcardRevealed = false;
+  renderFlashcard();
+  document.getElementById('flashcardOverlay').classList.add('open');
+}
+
+function closeFlashcard(e) {
+  if (e && e.target !== document.getElementById('flashcardOverlay')) return;
+  document.getElementById('flashcardOverlay').classList.remove('open');
+}
+
+function renderFlashcard() {
+  const d = flashcardDefs[flashcardIndex];
+  document.getElementById('flashcardCounter').textContent = `${flashcardIndex + 1} / ${flashcardDefs.length}`;
+  document.getElementById('flashcardTerm').textContent = d.term;
+  document.getElementById('flashcardDef').textContent = d.def;
+  document.getElementById('flashcardMeta').textContent = d.matiere;
+  document.getElementById('flashcardMeta').style.background = 
+    d.matiere === 'Management' ? '#dbeafe' : 
+    d.matiere === 'Droit' ? '#fef3c7' : 
+    d.matiere === 'Économie' ? '#dcfce7' : '#ede9fe';
+  document.getElementById('flashcardMeta').style.color = 
+    d.matiere === 'Management' ? '#2563a8' : 
+    d.matiere === 'Droit' ? '#b45309' : 
+    d.matiere === 'Économie' ? '#166534' : '#7c3aed';
+
+  flashcardRevealed = false;
+  document.getElementById('flashcardReveal').style.display = 'block';
+  document.getElementById('flashcardDef').style.display = 'none';
+  document.getElementById('flashcardMeta').style.display = 'none';
+}
+
+function revealFlashcard() {
+  if (flashcardRevealed) return;
+  flashcardRevealed = true;
+  document.getElementById('flashcardReveal').style.display = 'none';
+  document.getElementById('flashcardDef').style.display = 'block';
+  document.getElementById('flashcardMeta').style.display = 'inline-block';
+}
+
+function nextFlashcard() {
+  flashcardIndex = (flashcardIndex + 1) % flashcardDefs.length;
+  renderFlashcard();
+}
+
+function prevFlashcard() {
+  flashcardIndex = (flashcardIndex - 1 + flashcardDefs.length) % flashcardDefs.length;
+  renderFlashcard();
 }
 // ==================================================
 // RENDU
@@ -430,8 +530,10 @@ function render() {
 
   container.innerHTML = filtered.map(d => {
     const fav = favs.includes(d.id);
+    const isNewDef = isNew(d.createdAt);
     return `
     <div class="card">
+      ${isNewDef ? '<span class="card-badge-new">Nouveau</span>' : ''}
       <div class="card-top">
         <div class="card-term">${highlight(d.term, q)}</div>
         <span class="matiere-badge badge-${d.matiere}">${d.matiere}</span>
@@ -464,11 +566,17 @@ function render() {
       </details>` : ""}
 
       <div class="card-actions">
-        <button class="card-action-btn favorite-btn ${fav ? 'active' : ''}" onclick="toggleFavorite(${d.id})">
-          ${fav ? '★ Favori' : '☆ Favori'}
+        <button class="card-action-btn favorite-btn ${fav ? 'active' : ''}" onclick="toggleFavorite(${d.id})" title="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">
+          ${fav ? '★' : '☆'}<span class="btn-text">${fav ? ' Favori' : ' Favori'}</span>
         </button>
-        <button class="card-action-btn" onclick="shareDefinition('${d.term.replace(/'/g, "\\'")}', '${d.def.replace(/'/g, "\\'")}')">
-          📤 Partager
+        <button class="card-action-btn" onclick="shareDefinition('${d.term.replace(/'/g, "\\'")}', '${d.def.replace(/'/g, "\\'")}')" title="Partager">
+          📤<span class="btn-text"> Partager</span>
+        </button>
+        <button class="card-action-btn" onclick="copyDefinition('${d.term.replace(/'/g, "\\'")}', '${d.def.replace(/'/g, "\\'")}')" title="Copier">
+          📋<span class="btn-text"> Copier</span>
+        </button>
+        <button class="card-action-btn" onclick="exportCardToPDF(${d.id})" title="Exporter en PDF">
+          📄<span class="btn-text"> PDF</span>
         </button>
       </div>
     </div>`;
@@ -477,18 +585,13 @@ function render() {
   observeCards();
 }
 
-// QCM click handler (inline, pas d'addEventListener répété)
+// QCM click handler
 function handleQcmClick(btn) {
   if (btn.dataset.correct === "true") {
     btn.classList.add('correct');
-    btn.style.background = "";
-    btn.style.color = "";
   } else {
     btn.classList.add('wrong');
-    btn.style.background = "";
-    btn.style.color = "";
   }
-  // Désactiver tous les boutons de cette question
   const parent = btn.closest('.details-content');
   parent.querySelectorAll('.qcm-btn').forEach(b => b.disabled = true);
 }
@@ -538,9 +641,10 @@ function checkPassword() {
 }
 
 // ==================================================
-// ADMINISTRATION
+// ADMINISTRATION (avec modification)
 // ==================================================
 function openAdminPanel() {
+  cancelEdit();
   renderAdminList();
   document.getElementById('changePwdForm').classList.remove('open');
   document.getElementById('overlay').classList.add('open');
@@ -551,6 +655,7 @@ function closeAdmin() {
 function handleOverlayClick(e) {
   if (e.target === document.getElementById('overlay')) closeAdmin();
 }
+
 function renderAdminList() {
   const list = document.getElementById('adminList');
   document.getElementById('adminCount').textContent = definitions.length;
@@ -565,9 +670,76 @@ function renderAdminList() {
         <div class="admin-item-term">${d.term}</div>
         <div class="admin-item-meta">${d.matiere}</div>
       </div>
-      <button class="btn-del" onclick="deleteDefinition(${d.id})">✕</button>
+      <div class="admin-item-actions">
+        <button class="btn-edit" onclick="startEdit(${d.id})" title="Modifier">✏️</button>
+        <button class="btn-del" onclick="deleteDefinition(${d.id})" title="Supprimer">✕</button>
+      </div>
     </div>
   `).join('');
+}
+
+function startEdit(id) {
+  const d = definitions.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('formTerm').value = d.term;
+  document.getElementById('formMatiere').value = d.matiere;
+  document.getElementById('formDef').value = d.def;
+  document.getElementById('formExample').value = d.example || '';
+  document.getElementById('formRemember').value = d.remember || '';
+  document.getElementById('formTitle').textContent = 'Modifier la définition';
+  document.getElementById('btnFormAction').textContent = '💾 Enregistrer';
+  document.getElementById('btnCancelEdit').style.display = 'block';
+  document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  editingId = null;
+  document.getElementById('formTerm').value = '';
+  document.getElementById('formMatiere').value = 'Management';
+  document.getElementById('formDef').value = '';
+  document.getElementById('formExample').value = '';
+  document.getElementById('formRemember').value = '';
+  document.getElementById('formTitle').textContent = 'Ajouter une définition';
+  document.getElementById('btnFormAction').textContent = '+ Ajouter';
+  document.getElementById('btnCancelEdit').style.display = 'none';
+}
+
+async function handleFormAction() {
+  if (editingId !== null) {
+    await updateDefinition();
+  } else {
+    await addDefinition();
+  }
+}
+
+async function updateDefinition() {
+  const term = document.getElementById('formTerm').value.trim();
+  const matiere = document.getElementById('formMatiere').value;
+  const def = document.getElementById('formDef').value.trim();
+  const example = document.getElementById('formExample').value.trim();
+  const remember = document.getElementById('formRemember').value.trim();
+
+  if (!term || !def) { showToast('⚠️ Remplis le terme et la définition !'); return; }
+
+  const idx = definitions.findIndex(d => d.id === editingId);
+  if (idx === -1) return;
+
+  const existing = definitions.find(d => d.id !== editingId && d.term.toLowerCase() === term.toLowerCase() && d.matiere === matiere);
+  if (existing) { showToast('⚠️ Ce terme existe déjà.'); return; }
+
+  definitions[idx] = {
+    ...definitions[idx],
+    term, matiere, def,
+    example: example || undefined,
+    remember: remember || undefined
+  };
+
+  showToast('⏳ Sauvegarde…');
+  await saveRemote();
+  render(); renderAdminList();
+  cancelEdit();
+  showToast('✅ Définition modifiée !');
 }
 
 async function addDefinition() {
@@ -582,9 +754,13 @@ async function addDefinition() {
     showToast('⚠️ Ce terme existe déjà.'); return;
   }
 
-  const newDef = { id: nextId(), term, matiere, def };
-  if (example) newDef.example = example;
-  if (remember) newDef.remember = remember;
+  const newDef = {
+    id: nextId(),
+    term, matiere, def,
+    createdAt: new Date().toISOString().slice(0, 10),
+    example: example || undefined,
+    remember: remember || undefined
+  };
 
   definitions.push(newDef);
   showToast('⏳ Sauvegarde…');
@@ -637,25 +813,18 @@ function showToast(msg) {
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initScrollObserver();
+  initScrollTop();
   renderHistory();
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-  document.getElementById('btnExport').addEventListener('click', exportToPDF);
+  document.getElementById('btnFlashcard').addEventListener('click', openFlashcard);
 
-  // Sauvegarder l'historique quand on tape Entrée dans la recherche
   document.getElementById('searchInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       addToHistory(searchQuery);
     }
   });
 
-  // Sauvegarder l'historique quand on efface la recherche
-  const originalClear = clearSearch;
-  clearSearch = function() {
-    if (searchQuery.trim()) addToHistory(searchQuery);
-    originalClear();
-  };
-
   load();
 });
 
-console.log("LexiProf v2 chargé !");
+console.log("LexiProf v3 chargé !");
