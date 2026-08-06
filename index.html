@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+# ============================================================
+# INDEX.HTML
+# ============================================================
+html = """<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -17,14 +20,14 @@
     <span class="logo-tag">· STMG</span>
   </div>
   <div class="header-actions">
+    <button class="btn-icon" id="btnFlashcard" title="Mode Flashcard" aria-label="Mode Flashcard">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+    </button>
     <button class="btn-icon" id="themeToggle" title="Mode sombre / clair" aria-label="Changer de thème">
       <svg id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
       <svg id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
     </button>
-    <button class="btn-icon" id="btnExport" title="Exporter en PDF" aria-label="Exporter en PDF">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-    </button>
-    <button class="btn-admin" onclick="openAdmin()">⚙ Admin</button>
+    <button class="btn-admin" onclick="openAdmin()">⚙ <span class="btn-admin-text">Admin</span></button>
   </div>
 </header>
 
@@ -57,8 +60,8 @@
     <button class="filter-btn" style="--active-color:var(--rh)" onclick="setFilter('RH',this)">
       <span class="dot" style="background:var(--rh)"></span>RH
     </button>
-    <button class="filter-btn" style="--active-color:var(--accent)" onclick="setFilter('favorites',this)">
-      <span class="dot" style="background:var(--accent)">★</span>Mes favoris
+    <button class="filter-btn filter-fav" style="--active-color:var(--accent)" onclick="setFilter('favorites',this)">
+      <span class="fav-star">★</span>Mes favoris
     </button>
   </div>
 
@@ -76,7 +79,7 @@
     <div class="admin-body">
 
       <div class="form-section">
-        <h3>Ajouter une définition</h3>
+        <h3 id="formTitle">Ajouter une définition</h3>
         <div class="form-row">
           <label>Terme</label>
           <input type="text" id="formTerm" placeholder="Ex : Leadership">
@@ -102,7 +105,8 @@
           <label>Astuce mémotechnique (optionnel)</label>
           <textarea id="formRemember" placeholder="Une astuce pour retenir…"></textarea>
         </div>
-        <button class="btn-add" onclick="addDefinition()">+ Ajouter</button>
+        <button class="btn-add" id="btnFormAction" onclick="handleFormAction()">+ Ajouter</button>
+        <button class="btn-cancel-edit" id="btnCancelEdit" onclick="cancelEdit()" style="display:none">Annuler la modification</button>
       </div>
 
       <div>
@@ -142,6 +146,31 @@
     <button class="pwd-cancel" onclick="closePwdModal()">Annuler</button>
   </div>
 </div>
+
+<!-- FLASHCARD OVERLAY -->
+<div class="overlay" id="flashcardOverlay" onclick="closeFlashcard(event)">
+  <div class="flashcard-modal" onclick="event.stopPropagation()">
+    <div class="flashcard-header">
+      <span class="flashcard-counter" id="flashcardCounter">1 / 9</span>
+      <button class="btn-close" onclick="closeFlashcard()">✕</button>
+    </div>
+    <div class="flashcard-body" id="flashcardBody" onclick="revealFlashcard()">
+      <div class="flashcard-term" id="flashcardTerm">Terme</div>
+      <div class="flashcard-reveal" id="flashcardReveal">Cliquez pour révéler</div>
+      <div class="flashcard-def" id="flashcardDef" style="display:none">Définition</div>
+      <div class="flashcard-meta" id="flashcardMeta" style="display:none">Matière</div>
+    </div>
+    <div class="flashcard-actions">
+      <button class="flashcard-btn" onclick="prevFlashcard()">◀ Précédent</button>
+      <button class="flashcard-btn primary" onclick="nextFlashcard()">Suivant ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCROLL TO TOP -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Remonter en haut">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
 
 <div class="toast" id="toast"></div>
 
