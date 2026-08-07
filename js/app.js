@@ -798,6 +798,185 @@ function changePassword() {
 }
 
 // ==================================================
+// IMPORT MASSIF JSON
+// ==================================================
+
+async function importJson() {
+
+  const input = document.getElementById('jsonImport');
+
+  if (!input || !input.files.length) {
+    showToast('⚠️ Sélectionne un fichier JSON.');
+    return;
+  }
+
+  const file = input.files[0];
+
+  try {
+
+    // Lecture du fichier
+    const text = await file.text();
+
+    // Conversion JSON
+    const data = JSON.parse(text);
+
+    // Accepte :
+    // 1. [ {...}, {...} ]
+    // 2. { "definitions": [ {...}, {...} ] }
+
+    let imported = Array.isArray(data)
+      ? data
+      : data.definitions;
+
+    if (!Array.isArray(imported)) {
+      throw new Error(
+        'Le JSON doit contenir un tableau de définitions.'
+      );
+    }
+
+    if (imported.length === 0) {
+      throw new Error(
+        'Le fichier JSON est vide.'
+      );
+    }
+
+    // Vérification et préparation
+    const prepared = [];
+
+    for (const item of imported) {
+
+      if (
+        !item.term ||
+        !item.matiere ||
+        !item.def
+      ) {
+        console.warn(
+          'Définition ignorée : champs manquants',
+          item
+        );
+        continue;
+      }
+
+      // Vérifie les doublons
+      const alreadyExists = definitions.some(
+        d =>
+          d.term.toLowerCase() === item.term.toLowerCase() &&
+          d.matiere === item.matiere
+      );
+
+      if (alreadyExists) {
+        continue;
+      }
+
+      // Nouvelle définition
+      const newDefinition = {
+        id: nextId() + prepared.length,
+
+        term: String(item.term).trim(),
+
+        matiere: String(item.matiere).trim(),
+
+        def: String(item.def).trim(),
+
+        createdAt:
+          item.createdAt ||
+          new Date().toISOString().slice(0, 10),
+
+        example:
+          item.example
+            ? String(item.example).trim()
+            : undefined,
+
+        remember:
+          item.remember
+            ? String(item.remember).trim()
+            : undefined
+      };
+
+      // QCM facultatif
+      if (
+        item.qcm &&
+        item.qcm.question &&
+        Array.isArray(item.qcm.answers)
+      ) {
+
+        newDefinition.qcm = {
+          question: String(item.qcm.question),
+
+          answers: item.qcm.answers
+            .filter(a => a && a.text)
+            .map(a => ({
+              text: String(a.text),
+              correct: Boolean(a.correct)
+            }))
+        };
+
+      }
+
+      prepared.push(newDefinition);
+    }
+
+    // Rien de nouveau
+    if (prepared.length === 0) {
+
+      showToast(
+        '⚠️ Aucune nouvelle définition à importer.'
+      );
+
+      input.value = '';
+
+      return;
+    }
+
+    // Confirmation avant modification du JSONBin
+    const confirmImport = confirm(
+      `📥 ${prepared.length} définition(s) prête(s) à être importée(s).\n\n` +
+      `${imported.length - prepared.length} définition(s) ignorée(s) ` +
+      `(doublons ou données invalides).\n\n` +
+      `Continuer ?`
+    );
+
+    if (!confirmImport) {
+      return;
+    }
+
+    // Ajout dans la base actuelle
+    definitions.push(...prepared);
+
+    showToast('⏳ Import et sauvegarde…');
+
+    // Sauvegarde JSONBin
+    await saveRemote();
+
+    // Actualisation de l'interface
+    render();
+    renderAdminList();
+
+    // Nettoyage du champ fichier
+    input.value = '';
+
+    showToast(
+      `✅ ${prepared.length} définition(s) importée(s) !`
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Erreur import JSON :',
+      error
+    );
+
+    input.value = '';
+
+    showToast(
+      '❌ Fichier JSON invalide ou incompatible.'
+    );
+
+  }
+
+}
+
+// ==================================================
 // NOTIFICATIONS
 // ==================================================
 function showToast(msg) {
