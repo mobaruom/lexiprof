@@ -1,0 +1,18 @@
+{
+  "name": "LexiProf — Dictionnaire STMG",
+  "short_name": "LexiProf",
+  "description": "Dictionnaire STMG — Management, Droit, Économie et RH.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#1c1b19",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/IMG_6870.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
