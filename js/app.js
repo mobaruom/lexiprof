@@ -977,6 +977,154 @@ async function importJson() {
 }
 
 // ==================================================
+// IMPORT JSON PAR COPIER-COLLER
+// ==================================================
+
+async function importJsonText() {
+
+  const textarea = document.getElementById('jsonPaste');
+
+  if (!textarea) {
+    showToast('❌ Zone JSON introuvable.');
+    return;
+  }
+
+  const text = textarea.value.trim();
+
+  if (!text) {
+    showToast('⚠️ Colle d’abord ton JSON.');
+    return;
+  }
+
+  try {
+
+    let data = JSON.parse(text);
+
+    // Accepte :
+    // [ {...}, {...} ]
+    // ou
+    // { "definitions": [ {...}, {...} ] }
+
+    const imported = Array.isArray(data)
+      ? data
+      : data.definitions;
+
+    if (!Array.isArray(imported)) {
+      throw new Error('Format JSON incorrect.');
+    }
+
+    if (imported.length === 0) {
+      throw new Error('JSON vide.');
+    }
+
+    const prepared = [];
+
+    for (const item of imported) {
+
+      if (!item.term || !item.matiere || !item.def) {
+        continue;
+      }
+
+      const duplicate = definitions.some(d =>
+        d.term.trim().toLowerCase() ===
+        String(item.term).trim().toLowerCase()
+        &&
+        d.matiere === item.matiere
+      );
+
+      if (duplicate) continue;
+
+      const newDefinition = {
+        id: nextId() + prepared.length,
+
+        term: String(item.term).trim(),
+
+        matiere: String(item.matiere).trim(),
+
+        def: String(item.def).trim(),
+
+        example: item.example
+          ? String(item.example).trim()
+          : "",
+
+        remember: item.remember
+          ? String(item.remember).trim()
+          : "",
+
+        createdAt: item.createdAt ||
+          new Date().toISOString().slice(0,10)
+      };
+
+      // QCM
+      if (
+        item.qcm &&
+        item.qcm.question &&
+        Array.isArray(item.qcm.answers)
+      ) {
+
+        newDefinition.qcm = {
+          question: String(item.qcm.question),
+
+          answers: item.qcm.answers
+            .filter(a => a && a.text)
+            .map(a => ({
+              text: String(a.text),
+              correct: Boolean(a.correct)
+            }))
+        };
+
+      }
+
+      prepared.push(newDefinition);
+    }
+
+    if (prepared.length === 0) {
+
+      showToast(
+        '⚠️ Aucune nouvelle définition à importer.'
+      );
+
+      return;
+    }
+
+    const confirmed = confirm(
+      `📥 ${prepared.length} définition(s) prête(s) à être importée(s).\n\n` +
+      `Les doublons seront ignorés.\n\n` +
+      `Continuer ?`
+    );
+
+    if (!confirmed) return;
+
+    definitions.push(...prepared);
+
+    showToast('⏳ Sauvegarde…');
+
+    await saveRemote();
+
+    render();
+    renderAdminList();
+
+    textarea.value = '';
+
+    showToast(
+      `✅ ${prepared.length} définition(s) importée(s) !`
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Erreur JSON collé :',
+      error
+    );
+
+    showToast(
+      '❌ JSON invalide. Vérifie le format.'
+    );
+
+  }
+}
+
+// ==================================================
 // NOTIFICATIONS
 // ==================================================
 function showToast(msg) {
