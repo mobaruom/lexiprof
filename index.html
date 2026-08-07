@@ -124,6 +124,21 @@ onclick="importJson()">
 📥 Importer les définitions
 </button>
 
+<div class="form-row" style="margin-top:16px;">
+  <label>Ou coller directement le JSON</label>
+
+  <textarea
+    id="jsonPaste"
+    placeholder='Colle ici le JSON généré par ton IA…'
+    style="min-height:180px;font-family:monospace;font-size:13px;"
+  ></textarea>
+</div>
+
+<button
+  class="btn-add"
+  onclick="importJsonText()">
+  📋 Importer le JSON collé
+</button>
 </div>
 
 
