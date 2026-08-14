@@ -1156,3 +1156,598 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log("LexiProf v3 chargé !");
+
+/* ==========================================================
+   LEXIPROF — UI UPGRADE
+   ========================================================== */
+
+(function () {
+
+  "use strict";
+
+  /* --------------------------------------------------------
+     LOADER
+     -------------------------------------------------------- */
+
+  function finishLoader() {
+
+    const loader = document.getElementById("globalLoader");
+
+    if (!loader) return;
+
+    setTimeout(() => {
+      loader.classList.add("loaded");
+    }, 500);
+
+  }
+
+  window.addEventListener("load", finishLoader);
+
+
+  /* --------------------------------------------------------
+     PROGRESSION DE LECTURE
+     -------------------------------------------------------- */
+
+  function updateReadingProgress() {
+
+    const progress =
+      document.getElementById("readingProgress");
+
+    if (!progress) return;
+
+    const scrollTop = window.scrollY;
+
+    const height =
+      document.documentElement.scrollHeight -
+      window.innerHeight;
+
+    const percentage =
+      height > 0
+        ? (scrollTop / height) * 100
+        : 0;
+
+    progress.style.width =
+      Math.min(100, percentage) + "%";
+  }
+
+  window.addEventListener(
+    "scroll",
+    updateReadingProgress,
+    { passive: true }
+  );
+
+
+  /* --------------------------------------------------------
+     BIENVENUE
+     -------------------------------------------------------- */
+
+  window.closeWelcome = function () {
+
+    const banner =
+      document.getElementById("welcomeBanner");
+
+    if (!banner) return;
+
+    banner.classList.add("hide");
+
+    localStorage.setItem(
+      "lexiprof_welcome_seen",
+      "1"
+    );
+
+    setTimeout(() => {
+      banner.remove();
+    }, 400);
+  };
+
+
+  function initWelcome() {
+
+    const banner =
+      document.getElementById("welcomeBanner");
+
+    if (!banner) return;
+
+    if (
+      localStorage.getItem(
+        "lexiprof_welcome_seen"
+      )
+    ) {
+      banner.remove();
+      return;
+    }
+
+    setTimeout(() => {
+
+      if (
+        localStorage.getItem(
+          "lexiprof_welcome_seen"
+        )
+      ) return;
+
+      banner.style.display = "flex";
+
+    }, 1200);
+  }
+
+
+  /* --------------------------------------------------------
+     DEFINITION ALÉATOIRE
+     -------------------------------------------------------- */
+
+  let randomDefinition = null;
+
+
+  window.showRandomDefinition = function () {
+
+    if (
+      typeof definitions === "undefined" ||
+      !definitions.length
+    ) {
+      showToast("⚠️ Aucune définition disponible.");
+      return;
+    }
+
+    const index =
+      Math.floor(
+        Math.random() * definitions.length
+      );
+
+    randomDefinition =
+      definitions[index];
+
+    const term =
+      document.getElementById("randomTerm");
+
+    const def =
+      document.getElementById("randomDef");
+
+    const matiere =
+      document.getElementById("randomMatiere");
+
+    if (!term || !def || !matiere) return;
+
+    term.textContent =
+      randomDefinition.term;
+
+    def.textContent =
+      randomDefinition.def;
+
+    matiere.textContent =
+      randomDefinition.matiere;
+
+    const modal =
+      document.getElementById("randomModal");
+
+    modal.classList.add("open");
+  };
+
+
+  window.closeRandomModal = function () {
+
+    const modal =
+      document.getElementById("randomModal");
+
+    if (modal) {
+      modal.classList.remove("open");
+    }
+
+  };
+
+
+  window.openRandomDefinition = function () {
+
+    if (!randomDefinition) return;
+
+    closeRandomModal();
+
+    const card =
+      document.getElementById(
+        "card-" + randomDefinition.id
+      );
+
+    if (card) {
+
+      card.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      const btn =
+        document.querySelector(
+          `[onclick*="toggleCard(${randomDefinition.id}"]`
+        );
+
+      if (
+        btn &&
+        !card.classList.contains("open")
+      ) {
+        btn.click();
+      }
+
+      return;
+    }
+
+    const search =
+      document.getElementById("searchInput");
+
+    if (search) {
+
+      search.value =
+        randomDefinition.term;
+
+      searchQuery =
+        randomDefinition.term;
+
+      onSearch();
+
+      setTimeout(() => {
+
+        const newCard =
+          document.getElementById(
+            "card-" + randomDefinition.id
+          );
+
+        if (newCard) {
+
+          newCard.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+          });
+
+        }
+
+      }, 200);
+    }
+  };
+
+
+  /* --------------------------------------------------------
+     BOUTON ALÉATOIRE
+     -------------------------------------------------------- */
+
+  function initRandomButton() {
+
+    const btn =
+      document.getElementById("randomDefBtn");
+
+    if (!btn) return;
+
+    btn.addEventListener(
+      "click",
+      showRandomDefinition
+    );
+  }
+
+
+  /* --------------------------------------------------------
+     SCROLL VERS LES DÉFINITIONS
+     -------------------------------------------------------- */
+
+  function initScrollCards() {
+
+    const btn =
+      document.getElementById("scrollCardsBtn");
+
+    if (!btn) return;
+
+    btn.addEventListener(
+      "click",
+      () => {
+
+        const cards =
+          document.getElementById(
+            "cardsContainer"
+          );
+
+        if (!cards) return;
+
+        cards.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+
+      }
+    );
+  }
+
+
+  /* --------------------------------------------------------
+     RACCOURCIS CLAVIER
+     -------------------------------------------------------- */
+
+  document.addEventListener(
+    "keydown",
+    function (event) {
+
+      const target =
+        event.target;
+
+      const typing =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT";
+
+      if (
+        event.key === "/" &&
+        !typing
+      ) {
+
+        event.preventDefault();
+
+        const input =
+          document.getElementById(
+            "searchInput"
+          );
+
+        if (input) {
+          input.focus();
+        }
+
+      }
+
+      if (
+        event.key.toLowerCase() === "r" &&
+        !typing
+      ) {
+
+        event.preventDefault();
+
+        showRandomDefinition();
+
+      }
+
+      if (
+        event.key === "Escape"
+      ) {
+
+        const modal =
+          document.getElementById(
+            "randomModal"
+          );
+
+        if (
+          modal &&
+          modal.classList.contains("open")
+        ) {
+          closeRandomModal();
+        }
+
+      }
+
+    }
+  );
+
+
+  /* --------------------------------------------------------
+     INSTALLATION PWA
+     -------------------------------------------------------- */
+
+  let deferredInstallPrompt = null;
+
+  window.addEventListener(
+    "beforeinstallprompt",
+    function (event) {
+
+      event.preventDefault();
+
+      deferredInstallPrompt =
+        event;
+
+      const button =
+        document.getElementById(
+          "installAppBtn"
+        );
+
+      if (button) {
+        button.classList.add("show");
+      }
+
+    }
+  );
+
+
+  async function installApp() {
+
+    const button =
+      document.getElementById(
+        "installAppBtn"
+      );
+
+    if (!deferredInstallPrompt) {
+
+      showToast(
+        "📱 Sur iPhone : Partager → Ajouter à l’écran d’accueil."
+      );
+
+      return;
+    }
+
+    deferredInstallPrompt.prompt();
+
+    const result =
+      await deferredInstallPrompt.userChoice;
+
+    if (
+      result.outcome === "accepted"
+    ) {
+
+      showToast(
+        "✅ LexiProf est en cours d’installation !"
+      );
+
+    }
+
+    deferredInstallPrompt = null;
+
+    if (button) {
+      button.classList.remove("show");
+    }
+
+  }
+
+
+  function initInstallButton() {
+
+    const button =
+      document.getElementById(
+        "installAppBtn"
+      );
+
+    if (!button) return;
+
+    button.addEventListener(
+      "click",
+      installApp
+    );
+
+  }
+
+
+  window.addEventListener(
+    "appinstalled",
+    function () {
+
+      const button =
+        document.getElementById(
+          "installAppBtn"
+        );
+
+      if (button) {
+        button.classList.remove("show");
+      }
+
+      showToast(
+        "🎉 LexiProf a été installé !"
+      );
+
+    }
+  );
+
+
+  /* --------------------------------------------------------
+     FERMETURE MODAL EN CLIQUANT À L'EXTÉRIEUR
+     -------------------------------------------------------- */
+
+  const randomModal =
+    document.getElementById(
+      "randomModal"
+    );
+
+  if (randomModal) {
+
+    randomModal.addEventListener(
+      "click",
+      function (event) {
+
+        if (
+          event.target === randomModal
+        ) {
+          closeRandomModal();
+        }
+
+      }
+    );
+
+  }
+
+
+  /* --------------------------------------------------------
+     ANIMATION DES CARTES
+     -------------------------------------------------------- */
+
+  function upgradeCards() {
+
+    if (
+      typeof scrollObserver ===
+      "undefined"
+    ) return;
+
+    if (
+      typeof observeCards ===
+      "function"
+    ) {
+      observeCards();
+    }
+
+  }
+
+
+  /* --------------------------------------------------------
+     OUVERTURE DOUCE DES FICHES
+     -------------------------------------------------------- */
+
+  window.smoothOpenCard = function (
+    id,
+    button
+  ) {
+
+    const card =
+      document.getElementById(
+        "card-" + id
+      );
+
+    if (!card) return;
+
+    const isOpen =
+      card.classList.contains("open");
+
+    if (isOpen) {
+
+      card.classList.remove("open");
+
+      if (button) {
+        button.innerHTML =
+          "📖 Ouvrir la fiche";
+      }
+
+      return;
+
+    }
+
+    card.classList.add("open");
+
+    if (button) {
+      button.innerHTML =
+        "📕 Fermer la fiche";
+    }
+
+  };
+
+
+  /* --------------------------------------------------------
+     INITIALISATION
+     -------------------------------------------------------- */
+
+  function initUpgrade() {
+
+    initWelcome();
+
+    initRandomButton();
+
+    initScrollCards();
+
+    initInstallButton();
+
+    updateReadingProgress();
+
+  }
+
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      initUpgrade
+    );
+
+  } else {
+
+    initUpgrade();
+
+  }
+
+})();
