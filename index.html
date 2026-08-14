@@ -1,297 +1,995 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
-<meta name="description" content="LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH. Recherche instantanée, favoris, mode révision et plus.">
-<title>LexiProf — Dictionnaire STMG</title>
-<link rel="stylesheet" href="css/style.css">
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#f7f5f0">
+  <meta name="description" content="LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.">
+
+  <link rel="manifest" href="manifest.json">
+
+  <title>LexiProf — Dictionnaire STMG</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  >
 </head>
+
 <body>
+
+<!-- =========================================================
+     HEADER
+========================================================= -->
 
 <header>
   <div class="logo">
     <span class="logo-main">LexiProf</span>
     <span class="logo-tag">· STMG</span>
   </div>
+
   <div class="header-actions">
-    <button class="btn-icon" id="btnFlashcard" title="Mode Flashcard" aria-label="Mode Flashcard">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+
+    <button
+      class="btn-icon"
+      id="btnFlashcard"
+      title="Mode Flashcard"
+      aria-label="Mode Flashcard"
+    >
+      📚
     </button>
-    <button class="btn-icon" id="themeToggle" title="Mode sombre / clair" aria-label="Changer de thème">
-      <svg id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-      <svg id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+
+    <button
+      class="btn-icon"
+      id="themeToggle"
+      title="Mode sombre / clair"
+      aria-label="Changer de thème"
+    >
+      <span id="themeIcon">☾</span>
     </button>
-    <button class="btn-admin" onclick="openAdmin()">⚙ <span class="btn-admin-text">Admin</span></button>
+
+    <button
+      class="btn-admin"
+      onclick="openAdmin()"
+    >
+      ⚙ <span class="btn-admin-text">Admin</span>
+    </button>
+
   </div>
 </header>
 
+
+<!-- =========================================================
+     CONTENU PRINCIPAL
+========================================================= -->
+
 <main>
-  <div class="hero">
+
+  <!-- HERO -->
+
+  <section class="hero">
+
     <h1>Dictionnaire STMG</h1>
-    <p>Retrouve toutes les définitions de Management, Droit, Économie et RH</p>
+
+    <p>
+      Retrouve toutes les définitions de Management,
+      Droit, Économie et RH.
+    </p>
+
+    <!-- RECHERCHE -->
+
     <div class="search-wrap">
-      <svg class="search-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+
+      <svg
+        class="search-icon"
+        width="17"
+        height="17"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
       </svg>
-      <input type="text" id="searchInput" placeholder="Rechercher un terme…" oninput="onSearch()" autocomplete="off">
-      <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display:none">✕</button>
+
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Rechercher un terme…"
+        autocomplete="off"
+        oninput="onSearch()"
+      >
+
+      <button
+        class="search-clear"
+        id="searchClear"
+        onclick="clearSearch()"
+        aria-label="Effacer la recherche"
+      >
+        ×
+      </button>
+
     </div>
-    <div class="search-history" id="searchHistory"></div>
-    <div class="definition-counter" id="defCounter"></div>
-  </div>
 
-  <div class="filters">
-    <button class="filter-btn active" style="--active-color:var(--text)" onclick="setFilter('all',this)">Tout</button>
-    <button class="filter-btn" style="--active-color:var(--mgt)" onclick="setFilter('Management',this)">
-      <span class="dot" style="background:var(--mgt)"></span>Management
-    </button>
-    <button class="filter-btn" style="--active-color:var(--drt)" onclick="setFilter('Droit',this)">
-      <span class="dot" style="background:var(--drt)"></span>Droit
-    </button>
-    <button class="filter-btn" style="--active-color:var(--eco)" onclick="setFilter('Économie',this)">
-      <span class="dot" style="background:var(--eco)"></span>Économie
-    </button>
-    <button class="filter-btn" style="--active-color:var(--rh)" onclick="setFilter('RH',this)">
-      <span class="dot" style="background:var(--rh)"></span>RH
-    </button>
-    <button class="filter-btn filter-fav" style="--active-color:var(--accent)" onclick="setFilter('favorites',this)">
-      <span class="fav-star">★</span>Mes favoris
-    </button>
-  </div>
+    <!-- HISTORIQUE -->
 
-  <div class="results-info" id="resultsInfo"></div>
-  <div class="cards" id="cardsContainer"></div>
+    <div
+      class="search-history"
+      id="searchHistory"
+    ></div>
+
+    <!-- COMPTEUR -->
+
+    <div
+      class="definition-counter"
+      id="defCounter"
+    ></div>
+
+  </section>
+
+
+  <!-- =======================================================
+       FILTRES
+  ======================================================== -->
+
+  <nav class="filters" aria-label="Filtres">
+
+    <button
+      class="filter-btn active"
+      style="--active-color:var(--text)"
+      onclick="setFilter('all',this)"
+    >
+      Tout
+    </button>
+
+    <button
+      class="filter-btn"
+      style="--active-color:var(--mgt)"
+      onclick="setFilter('Management',this)"
+    >
+      <span
+        class="dot"
+        style="background:var(--mgt)"
+      ></span>
+
+      Management
+    </button>
+
+    <button
+      class="filter-btn"
+      style="--active-color:var(--drt)"
+      onclick="setFilter('Droit',this)"
+    >
+      <span
+        class="dot"
+        style="background:var(--drt)"
+      ></span>
+
+      Droit
+    </button>
+
+    <button
+      class="filter-btn"
+      style="--active-color:var(--eco)"
+      onclick="setFilter('Économie',this)"
+    >
+      <span
+        class="dot"
+        style="background:var(--eco)"
+      ></span>
+
+      Économie
+    </button>
+
+    <button
+      class="filter-btn"
+      style="--active-color:var(--rh)"
+      onclick="setFilter('RH',this)"
+    >
+      <span
+        class="dot"
+        style="background:var(--rh)"
+      ></span>
+
+      RH
+    </button>
+
+    <button
+      class="filter-btn filter-fav"
+      style="--active-color:var(--accent)"
+      onclick="setFilter('favorites',this)"
+    >
+      <span class="fav-star">★</span>
+
+      Mes favoris
+    </button>
+
+  </nav>
+
+
+  <!-- =======================================================
+       INFORMATIONS
+  ======================================================== -->
+
+  <div
+    class="results-info"
+    id="resultsInfo"
+  ></div>
+
+
+  <!-- =======================================================
+       CARTES
+  ======================================================== -->
+
+  <section
+    class="cards"
+    id="cardsContainer"
+    aria-live="polite"
+  ></section>
+
 </main>
 
-<!-- ADMIN OVERLAY -->
-<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
-  <div class="admin-panel" id="adminPanel">
-    <div class="admin-header">
-      <h2>Interface Admin</h2>
-      <button class="btn-close" onclick="closeAdmin()">✕</button>
-    </div>
-    <div class="admin-body">
 
-      <div class="form-section">
-        <h3 id="formTitle">Ajouter une définition</h3>
-        <div class="form-row">
-          <label>Terme</label>
-          <input type="text" id="formTerm" placeholder="Ex : Leadership">
-        </div>
-        <div class="form-row">
-          <label>Matière</label>
-          <select id="formMatiere">
-            <option value="Management">Management</option>
-            <option value="Droit">Droit</option>
-            <option value="Économie">Économie</option>
-            <option value="RH">RH</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Définition</label>
-          <textarea id="formDef" placeholder="Saisir la définition complète…"></textarea>
-        </div>
-        <div class="form-row">
-          <label>Exemple concret (optionnel)</label>
-          <textarea id="formExample" placeholder="Un exemple pour illustrer…"></textarea>
-        </div>
-        <div class="form-row">
-          <label>Astuce mémotechnique (optionnel)</label>
-          <textarea id="formRemember" placeholder="Une astuce pour retenir…"></textarea>
-        </div>
-        <button class="btn-add" id="btnFormAction" onclick="handleFormAction()">+ Ajouter</button>
-        <button class="btn-cancel-edit" id="btnCancelEdit" onclick="cancelEdit()" style="display:none">Annuler la modification</button>
-      </div>
-
-<div class="form-section">
-
-<h3>📥 Import massif JSON</h3>
-
-<div class="form-row">
-<label>Fichier JSON</label>
-<input
-type="file"
-id="jsonImport"
-accept=".json">
-</div>
-
-<button
-class="btn-add"
-onclick="importJson()">
-📥 Importer les définitions
-</button>
-
-<div class="form-row" style="margin-top:16px;">
-  <label>Ou coller directement le JSON</label>
-
-  <textarea
-    id="jsonPaste"
-    placeholder='Colle ici le JSON généré par ton IA…'
-    style="min-height:180px;font-family:monospace;font-size:13px;"
-  ></textarea>
-</div>
-
-<button
-  class="btn-add"
-  onclick="importJsonText()">
-  📋 Importer le JSON collé
-</button>
-</div>
-
-
-      <div>
-        <div class="admin-list-title">Définitions enregistrées (<span id="adminCount">0</span>)</div>
-        <div id="adminList"></div>
-      </div>
-
-      <div class="change-pwd-section">
-        <button class="change-pwd-toggle" onclick="toggleChangePwd()">🔑 Changer le mot de passe admin</button>
-        <div class="change-pwd-form" id="changePwdForm">
-          <div class="form-row" style="margin-top:12px">
-            <label>Nouveau mot de passe</label>
-            <input type="password" id="newPwd1" placeholder="Nouveau mot de passe">
-          </div>
-          <div class="form-row">
-            <label>Confirmer</label>
-            <input type="password" id="newPwd2" placeholder="Répéter">
-          </div>
-          <button class="btn-add" onclick="changePassword()" style="background:var(--rh)">Enregistrer</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- PASSWORD OVERLAY -->
-<div class="overlay" id="pwdOverlay">
-  <div class="pwd-modal">
-    <div class="lock-icon">🔒</div>
-    <h2>Accès Admin</h2>
-    <p>Entrez le mot de passe pour accéder à l'interface.</p>
-    <input type="password" id="pwdInput" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkPassword()">
-    <div class="pwd-error" id="pwdError"></div>
-    <button class="btn-unlock" onclick="checkPassword()">Déverrouiller</button>
-    <br>
-    <button class="pwd-cancel" onclick="closePwdModal()">Annuler</button>
-  </div>
-</div>
-
-<!-- FLASHCARD OVERLAY -->
-<div class="overlay" id="flashcardOverlay" onclick="closeFlashcard(event)">
-  <div class="flashcard-modal" onclick="event.stopPropagation()">
-    <div class="flashcard-header">
-      <span class="flashcard-counter" id="flashcardCounter">1 / 9</span>
-      <button class="btn-close" onclick="closeFlashcard()">✕</button>
-    </div>
-    <div class="flashcard-body" id="flashcardBody" onclick="revealFlashcard()">
-      <div class="flashcard-term" id="flashcardTerm">Terme</div>
-      <div class="flashcard-reveal" id="flashcardReveal">Cliquez pour révéler</div>
-      <div class="flashcard-def" id="flashcardDef" style="display:none">Définition</div>
-      <div class="flashcard-meta" id="flashcardMeta" style="display:none">Matière</div>
-    </div>
-    <div class="flashcard-actions">
-      <button class="flashcard-btn" onclick="prevFlashcard()">◀ Précédent</button>
-      <button class="flashcard-btn primary" onclick="nextFlashcard()">Suivant ▶</button>
-    </div>
-  </div>
-</div>
-
-<!-- SCROLL TO TOP -->
-<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Remonter en haut">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
-</button>
-
-<div class="toast" id="toast"></div>
-
-<footer>LexiProf · Synchronisé via JSONbin · Définitions partagées pour tous</footer>
-
-<script src="js/config.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/app.js"></script>
 <!-- =========================================================
-     LEXIPROF — UI UPGRADE PACK
-     ========================================================= -->
+     ACTIONS RAPIDES
+========================================================= -->
 
-<!-- Barre de progression -->
-<div class="reading-progress" id="readingProgress"></div>
+<div
+  class="quick-actions"
+  id="quickActions"
+>
 
-<!-- Bouton installation -->
-<button class="install-app-btn" id="installAppBtn" type="button">
-  <span>📱</span>
-  <span>Installer LexiProf</span>
-</button>
-
-<!-- Zone d'actions rapides -->
-<div class="quick-actions" id="quickActions">
-  <button class="quick-action" id="randomDefBtn" title="Définition aléatoire">
+  <button
+    class="quick-action"
+    id="randomDefBtn"
+    title="Définition aléatoire"
+  >
     🎲
     <span>Aléatoire</span>
   </button>
 
-  <button class="quick-action" id="scrollCardsBtn" title="Voir les définitions">
+  <button
+    class="quick-action"
+    id="scrollCardsBtn"
+    title="Voir les définitions"
+  >
     📚
     <span>Définitions</span>
   </button>
+
 </div>
 
-<!-- Raccourcis clavier -->
-<div class="keyboard-hint" id="keyboardHint">
-  <kbd>/</kbd> rechercher
-  <kbd>R</kbd> aléatoire
-  <kbd>Esc</kbd> fermer
-</div>
 
-<!-- Notification de bienvenue -->
-<div class="welcome-banner" id="welcomeBanner">
-  <div class="welcome-icon">📚</div>
-  <div class="welcome-content">
-    <strong>Bienvenue sur LexiProf</strong>
-    <span>Ton dictionnaire STMG pour réviser plus efficacement.</span>
+<!-- =========================================================
+     BOUTON RETOUR EN HAUT
+========================================================= -->
+
+<button
+  class="scroll-top"
+  id="scrollTop"
+  onclick="window.scrollTo({top:0,behavior:'smooth'})"
+  title="Remonter en haut"
+  aria-label="Remonter en haut"
+>
+  ↑
+</button>
+
+
+<!-- =========================================================
+     BARRE DE PROGRESSION
+========================================================= -->
+
+<div
+  class="reading-progress"
+  id="readingProgress"
+></div>
+
+
+<!-- =========================================================
+     ADMIN OVERLAY
+========================================================= -->
+
+<div
+  class="overlay"
+  id="overlay"
+  onclick="handleOverlayClick(event)"
+>
+
+  <div
+    class="admin-panel"
+    id="adminPanel"
+  >
+
+    <!-- ADMIN HEADER -->
+
+    <div class="admin-header">
+
+      <div>
+        <h2>Interface Admin</h2>
+
+        <p class="admin-subtitle">
+          Gérer les définitions de LexiProf
+        </p>
+      </div>
+
+      <button
+        class="btn-close"
+        onclick="closeAdmin()"
+        aria-label="Fermer"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="admin-body">
+
+
+      <!-- ===================================================
+           AJOUT / MODIFICATION
+      ==================================================== -->
+
+      <section class="form-section">
+
+        <h3 id="formTitle">
+          Ajouter une définition
+        </h3>
+
+
+        <div class="form-row">
+
+          <label for="formTerm">
+            Terme
+          </label>
+
+          <input
+            type="text"
+            id="formTerm"
+            placeholder="Ex : Leadership"
+          >
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="formMatiere">
+            Matière
+          </label>
+
+          <select id="formMatiere">
+
+            <option value="Management">
+              Management
+            </option>
+
+            <option value="Droit">
+              Droit
+            </option>
+
+            <option value="Économie">
+              Économie
+            </option>
+
+            <option value="RH">
+              RH
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="formDef">
+            Définition
+          </label>
+
+          <textarea
+            id="formDef"
+            placeholder="Saisir la définition complète…"
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="formExample">
+            Exemple concret
+            <span>(optionnel)</span>
+          </label>
+
+          <textarea
+            id="formExample"
+            placeholder="Un exemple pour illustrer la notion…"
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="formRemember">
+            À retenir
+            <span>(optionnel)</span>
+          </label>
+
+          <textarea
+            id="formRemember"
+            placeholder="Une phrase courte à retenir…"
+          ></textarea>
+
+        </div>
+
+
+        <button
+          class="btn-add"
+          id="btnFormAction"
+          onclick="handleFormAction()"
+        >
+          + Ajouter la définition
+        </button>
+
+
+        <button
+          class="btn-cancel-edit"
+          id="btnCancelEdit"
+          onclick="cancelEdit()"
+          style="display:none"
+        >
+          Annuler la modification
+        </button>
+
+      </section>
+
+
+      <!-- ===================================================
+           IMPORT JSON
+      ==================================================== -->
+
+      <section class="form-section import-section">
+
+        <h3>
+          📥 Import massif
+        </h3>
+
+        <p class="section-description">
+          Ajoute plusieurs définitions en une seule fois.
+        </p>
+
+
+        <!-- FICHIER -->
+
+        <div class="form-row">
+
+          <label for="jsonImport">
+            Importer un fichier JSON
+          </label>
+
+          <input
+            type="file"
+            id="jsonImport"
+            accept=".json,application/json"
+          >
+
+        </div>
+
+
+        <button
+          class="btn-add"
+          onclick="importJson()"
+        >
+          📥 Importer le fichier
+        </button>
+
+
+        <!-- COPIER / COLLER -->
+
+        <div class="form-row json-paste-row">
+
+          <label for="jsonPaste">
+            Ou coller directement le JSON
+          </label>
+
+          <textarea
+            id="jsonPaste"
+            class="json-editor"
+            placeholder='[
+  {
+    "term": "Leadership",
+    "matiere": "Management",
+    "def": "Définition..."
+  }
+]'
+          ></textarea>
+
+        </div>
+
+
+        <button
+          class="btn-add"
+          onclick="importJsonText()"
+        >
+          📋 Importer le JSON collé
+        </button>
+
+
+        <button
+          class="btn-secondary"
+          onclick="exportJson()"
+        >
+          📤 Exporter toutes les définitions
+        </button>
+
+      </section>
+
+
+      <!-- ===================================================
+           LISTE ADMIN
+      ==================================================== -->
+
+      <section class="admin-definitions">
+
+        <div class="admin-list-heading">
+
+          <div>
+
+            <h3>
+              Définitions enregistrées
+            </h3>
+
+            <p>
+              <span id="adminCount">0</span>
+              définition(s)
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="adminList"
+          class="admin-list"
+        ></div>
+
+      </section>
+
+
+      <!-- ===================================================
+           MOT DE PASSE
+      ==================================================== -->
+
+      <section class="change-pwd-section">
+
+        <button
+          class="change-pwd-toggle"
+          onclick="toggleChangePwd()"
+        >
+          🔑 Changer le mot de passe admin
+        </button>
+
+
+        <div
+          class="change-pwd-form"
+          id="changePwdForm"
+        >
+
+          <div class="form-row">
+
+            <label for="newPwd1">
+              Nouveau mot de passe
+            </label>
+
+            <input
+              type="password"
+              id="newPwd1"
+              placeholder="Nouveau mot de passe"
+            >
+
+          </div>
+
+
+          <div class="form-row">
+
+            <label for="newPwd2">
+              Confirmation
+            </label>
+
+            <input
+              type="password"
+              id="newPwd2"
+              placeholder="Répéter le mot de passe"
+            >
+
+          </div>
+
+
+          <button
+            class="btn-add"
+            onclick="changePassword()"
+          >
+            Enregistrer
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
   </div>
-  <button onclick="closeWelcome()" aria-label="Fermer">✕</button>
+
 </div>
 
-<!-- Modal définition aléatoire -->
-<div class="random-modal" id="randomModal">
+
+<!-- =========================================================
+     MOT DE PASSE ADMIN
+========================================================= -->
+
+<div
+  class="overlay"
+  id="pwdOverlay"
+>
+
+  <div class="pwd-modal">
+
+    <div class="lock-icon">
+      🔒
+    </div>
+
+    <h2>
+      Accès Admin
+    </h2>
+
+    <p>
+      Entrez le mot de passe pour continuer.
+    </p>
+
+
+    <input
+      type="password"
+      id="pwdInput"
+      placeholder="••••••••"
+      autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') checkPassword()"
+    >
+
+
+    <div
+      class="pwd-error"
+      id="pwdError"
+    ></div>
+
+
+    <button
+      class="btn-unlock"
+      onclick="checkPassword()"
+    >
+      Déverrouiller
+    </button>
+
+
+    <button
+      class="pwd-cancel"
+      onclick="closePwdModal()"
+    >
+      Annuler
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     FLASHCARDS
+========================================================= -->
+
+<div
+  class="overlay"
+  id="flashcardOverlay"
+  onclick="closeFlashcard(event)"
+>
+
+  <div
+    class="flashcard-modal"
+    onclick="event.stopPropagation()"
+  >
+
+    <div class="flashcard-header">
+
+      <span
+        class="flashcard-counter"
+        id="flashcardCounter"
+      >
+        1 / 1
+      </span>
+
+      <button
+        class="btn-close"
+        onclick="closeFlashcard()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div
+      class="flashcard-body"
+      id="flashcardBody"
+      onclick="revealFlashcard()"
+    >
+
+      <div
+        class="flashcard-matiere"
+        id="flashcardMeta"
+      >
+        Management
+      </div>
+
+      <div
+        class="flashcard-term"
+        id="flashcardTerm"
+      >
+        Terme
+      </div>
+
+      <div
+        class="flashcard-reveal"
+        id="flashcardReveal"
+      >
+        Cliquez pour révéler
+      </div>
+
+      <div
+        class="flashcard-def"
+        id="flashcardDef"
+        style="display:none"
+      >
+        Définition
+      </div>
+
+    </div>
+
+
+    <div class="flashcard-actions">
+
+      <button
+        class="flashcard-btn"
+        onclick="prevFlashcard()"
+      >
+        ← Précédent
+      </button>
+
+      <button
+        class="flashcard-btn primary"
+        onclick="nextFlashcard()"
+      >
+        Suivant →
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     DÉFINITION ALÉATOIRE
+========================================================= -->
+
+<div
+  class="random-modal"
+  id="randomModal"
+>
+
   <div class="random-modal-card">
-    <button class="random-close" onclick="closeRandomModal()">✕</button>
 
-    <span class="random-label">🎲 DÉFINITION ALÉATOIRE</span>
+    <button
+      class="random-close"
+      onclick="closeRandomModal()"
+      aria-label="Fermer"
+    >
+      ×
+    </button>
 
-    <div class="random-matiere" id="randomMatiere"></div>
 
-    <h2 id="randomTerm"></h2>
+    <span class="random-label">
+      🎲 DÉFINITION ALÉATOIRE
+    </span>
 
-    <p id="randomDef"></p>
+
+    <div
+      class="random-matiere"
+      id="randomMatiere"
+    ></div>
+
+
+    <h2
+      id="randomTerm"
+    ></h2>
+
+
+    <p
+      id="randomDef"
+    ></p>
+
 
     <div class="random-actions">
-      <button onclick="openRandomDefinition()">
+
+      <button
+        onclick="openRandomDefinition()"
+      >
         📖 Ouvrir la fiche
       </button>
 
-      <button class="secondary" onclick="showRandomDefinition()">
+      <button
+        class="secondary"
+        onclick="showRandomDefinition()"
+      >
         🎲 Une autre
       </button>
+
     </div>
+
   </div>
+
 </div>
 
-<!-- Indicateur de chargement global -->
-<div class="global-loader" id="globalLoader">
-  <div class="loader-logo">L</div>
+
+<!-- =========================================================
+     MESSAGE BIENVENUE
+========================================================= -->
+
+<div
+  class="welcome-banner"
+  id="welcomeBanner"
+>
+
+  <div class="welcome-icon">
+    📚
+  </div>
+
+  <div class="welcome-content">
+
+    <strong>
+      Bienvenue sur LexiProf
+    </strong>
+
+    <span>
+      Ton dictionnaire STMG pour réviser plus efficacement.
+    </span>
+
+  </div>
+
+  <button
+    onclick="closeWelcome()"
+    aria-label="Fermer"
+  >
+    ×
+  </button>
+
+</div>
+
+
+<!-- =========================================================
+     INSTALLATION
+========================================================= -->
+
+<button
+  class="install-app-btn"
+  id="installAppBtn"
+  type="button"
+>
+
+  <span>
+    📱
+  </span>
+
+  <span>
+    Installer LexiProf
+  </span>
+
+</button>
+
+
+<!-- =========================================================
+     RACCOURCIS
+========================================================= -->
+
+<div
+  class="keyboard-hint"
+  id="keyboardHint"
+>
+
+  <kbd>/</kbd>
+  rechercher
+
+  <kbd>R</kbd>
+  aléatoire
+
+  <kbd>Esc</kbd>
+  fermer
+
+</div>
+
+
+<!-- =========================================================
+     LOADER
+========================================================= -->
+
+<div
+  class="global-loader"
+  id="globalLoader"
+>
+
+  <div class="loader-logo">
+    L
+  </div>
+
   <div class="loader-bar">
     <span></span>
   </div>
-  <p>Chargement de LexiProf…</p>
+
+  <p>
+    Chargement de LexiProf…
+  </p>
+
 </div>
 
+
 <!-- =========================================================
-     À AJOUTER JUSTE AVANT </body>
-     ========================================================= -->
+     TOAST
+========================================================= -->
+
+<div
+  class="toast"
+  id="toast"
+  role="status"
+  aria-live="polite"
+></div>
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer>
+
+  <strong>
+    LexiProf
+  </strong>
+
+  <span>
+    · Dictionnaire STMG
+  </span>
+
+  <br>
+
+  <small>
+    Synchronisé via JSONBin
+  </small>
+
+</footer>
+
+
+<!-- =========================================================
+     SCRIPTS
+========================================================= -->
+
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+
 </body>
 </html>
