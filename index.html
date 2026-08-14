@@ -213,6 +213,85 @@ onclick="importJson()">
 <script src="js/config.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/app.js"></script>
+<!-- =========================================================
+     LEXIPROF — UI UPGRADE PACK
+     ========================================================= -->
 
+<!-- Barre de progression -->
+<div class="reading-progress" id="readingProgress"></div>
+
+<!-- Bouton installation -->
+<button class="install-app-btn" id="installAppBtn" type="button">
+  <span>📱</span>
+  <span>Installer LexiProf</span>
+</button>
+
+<!-- Zone d'actions rapides -->
+<div class="quick-actions" id="quickActions">
+  <button class="quick-action" id="randomDefBtn" title="Définition aléatoire">
+    🎲
+    <span>Aléatoire</span>
+  </button>
+
+  <button class="quick-action" id="scrollCardsBtn" title="Voir les définitions">
+    📚
+    <span>Définitions</span>
+  </button>
+</div>
+
+<!-- Raccourcis clavier -->
+<div class="keyboard-hint" id="keyboardHint">
+  <kbd>/</kbd> rechercher
+  <kbd>R</kbd> aléatoire
+  <kbd>Esc</kbd> fermer
+</div>
+
+<!-- Notification de bienvenue -->
+<div class="welcome-banner" id="welcomeBanner">
+  <div class="welcome-icon">📚</div>
+  <div class="welcome-content">
+    <strong>Bienvenue sur LexiProf</strong>
+    <span>Ton dictionnaire STMG pour réviser plus efficacement.</span>
+  </div>
+  <button onclick="closeWelcome()" aria-label="Fermer">✕</button>
+</div>
+
+<!-- Modal définition aléatoire -->
+<div class="random-modal" id="randomModal">
+  <div class="random-modal-card">
+    <button class="random-close" onclick="closeRandomModal()">✕</button>
+
+    <span class="random-label">🎲 DÉFINITION ALÉATOIRE</span>
+
+    <div class="random-matiere" id="randomMatiere"></div>
+
+    <h2 id="randomTerm"></h2>
+
+    <p id="randomDef"></p>
+
+    <div class="random-actions">
+      <button onclick="openRandomDefinition()">
+        📖 Ouvrir la fiche
+      </button>
+
+      <button class="secondary" onclick="showRandomDefinition()">
+        🎲 Une autre
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Indicateur de chargement global -->
+<div class="global-loader" id="globalLoader">
+  <div class="loader-logo">L</div>
+  <div class="loader-bar">
+    <span></span>
+  </div>
+  <p>Chargement de LexiProf…</p>
+</div>
+
+<!-- =========================================================
+     À AJOUTER JUSTE AVANT </body>
+     ========================================================= -->
 </body>
 </html>
