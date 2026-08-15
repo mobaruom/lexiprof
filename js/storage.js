@@ -1,96 +1,186 @@
 // ==================================================
-// STOCKAGE (JSONBIN)
+// STOCKAGE — JSONBIN
 // ==================================================
 
-async function load() {
-  setLoading(true);
+// --------------------------------------------------
+// CHARGEMENT DEPUIS JSONBIN
+// --------------------------------------------------
+
+async function loadRemote() {
+
+  const controller = new AbortController();
+
+  // Empêche JSONBin de bloquer LexiProf indéfiniment
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 8000);
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch(
+      BIN_URL + "/latest",
+      {
+        method: "GET",
+        headers: HEADERS_R,
+        signal: controller.signal,
+        cache: "no-store"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `JSONBin HTTP ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+
+    // JSONBin peut renvoyer les données directement
+    // ou dans "record"
+    const record = data?.record ?? data;
+
+    const defs = record?.definitions;
+
+    if (!Array.isArray(defs)) {
+      throw new Error(
+        "Format JSONBin invalide : definitions introuvable."
+      );
+    }
+
+    // Sauvegarde locale de secours
+    localStorage.setItem(
+      "lexiprof_fallback",
+      JSON.stringify(defs)
+    );
+
+    return defs;
+
+  } catch (error) {
+
+    console.warn(
+      "⚠️ Impossible de charger JSONBin :",
+      error
+    );
+
+    // --------------------------------------------------
+    // FALLBACK LOCAL
+    // --------------------------------------------------
 
     try {
-      const res = await fetch(BIN_URL + "/latest", {
-        headers: HEADERS_R,
-        signal: controller.signal
-      });
 
-      if (!res.ok) throw new Error(res.status);
+      const local = localStorage.getItem(
+        "lexiprof_fallback"
+      );
 
-      const data = await res.json();
-      const defs = data?.definitions ?? data?.record?.definitions ?? null;
+      if (local) {
 
-      if (Array.isArray(defs) && defs.length > 0) {
-        definitions = defs;
-      } else {
-        definitions = [...defaultData];
-        await saveRemote();
+        const defs = JSON.parse(local);
+
+        if (Array.isArray(defs)) {
+
+          console.log(
+            "✅ Définitions locales chargées."
+          );
+
+          return defs;
+        }
       }
 
-    } finally {
-      clearTimeout(timeout);
+    } catch (localError) {
+
+      console.warn(
+        "⚠️ Erreur avec les données locales :",
+        localError
+      );
     }
 
-  } catch (e) {
+    // --------------------------------------------------
+    // DERNIER RECOURS : DONNÉES PAR DÉFAUT
+    // --------------------------------------------------
 
-    console.warn("JSONBin inaccessible ou trop lent", e);
+    console.log(
+      "ℹ️ Utilisation des définitions par défaut."
+    );
 
-    try {
-      const stored = localStorage.getItem("lexiprof_fallback");
-      definitions = stored
-        ? JSON.parse(stored)
-        : [...defaultData];
-    } catch {
-      definitions = [...defaultData];
-    }
+    return [...defaultData];
 
-    showToast("⚠️ Mode hors ligne — données locales utilisées");
-  }
+  } finally {
 
-  setLoading(false);
-  render();
+    clearTimeout(timeout);
 
-  // Ferme l'écran de chargement global
-  const loader = document.querySelector(".global-loader");
-
-  if (loader) {
-    loader.classList.add("hidden");
-
-    setTimeout(() => {
-      loader.remove();
-    }, 500);
   }
 }
 
+
+// --------------------------------------------------
+// SAUVEGARDE SUR JSONBIN
+// --------------------------------------------------
 
 async function saveRemote() {
 
   try {
 
-    const res = await fetch(BIN_URL, {
-      method: "PUT",
-      headers: HEADERS_W,
-      body: JSON.stringify({ definitions })
-    });
+    const response = await fetch(
+      BIN_URL,
+      {
+        method: "PUT",
+        headers: HEADERS_W,
+        body: JSON.stringify({
+          definitions: definitions
+        })
+      }
+    );
 
-    if (!res.ok) throw new Error(res.status);
+    if (!response.ok) {
+      throw new Error(
+        `JSONBin HTTP ${response.status}`
+      );
+    }
 
+    // Toujours garder une copie locale
     localStorage.setItem(
       "lexiprof_fallback",
       JSON.stringify(definitions)
     );
 
-  } catch (e) {
-
-    console.warn("Sauvegarde échouée", e);
-
-    localStorage.setItem(
-      "lexiprof_fallback",
-      JSON.stringify(definitions)
+    console.log(
+      "✅ Définitions sauvegardées sur JSONBin."
     );
 
-    showToast(
-      "⚠️ Erreur de sauvegarde. Copie locale conservée."
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "❌ Erreur sauvegarde JSONBin :",
+      error
     );
+
+    // Même si JSONBin tombe, on garde les données
+    // localement pour éviter de les perdre.
+    try {
+
+      localStorage.setItem(
+        "lexiprof_fallback",
+        JSON.stringify(definitions)
+      );
+
+    } catch (localError) {
+
+      console.error(
+        "❌ Impossible de créer la sauvegarde locale :",
+        localError
+      );
+    }
+
+    if (typeof showToast === "function") {
+
+      showToast(
+        "⚠️ JSONBin indisponible — copie locale conservée."
+      );
+
+    }
+
+    return false;
   }
 }
