@@ -123,11 +123,6 @@ let deferredInstallPrompt = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  initTheme();
-  initInstallPrompt();
-  initKeyboardShortcuts();
-  initScrollEffects();
-
   load();
 
 });
