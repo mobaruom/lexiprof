@@ -1,30 +1,27 @@
-// ==================================================
-// LEXIPROF — APP.JS
-// Version stable
-// IMPORTANT : load() et saveRemote() sont dans storage.js
-// ==================================================
+alert("APP.JS EST CHARGÉ");
+/* =========================================================
+   LEXIPROF — APP.JS COMPLET
+========================================================= */
 
-"use strict";
 
-// ==================================================
-// DONNÉES PAR DÉFAUT
-// ==================================================
+/* =========================================================
+   DONNÉES DE BASE
+========================================================= */
 
 const defaultData = [
   {
     id: 1,
     term: "Management",
     matiere: "Management",
-    def: "Ensemble des techniques de direction, de coordination et de contrôle permettant à une organisation d'atteindre ses objectifs de manière efficace et efficiente.",
-    example: "Le management d'une entreprise implique de planifier les stratégies, organiser les ressources, diriger les équipes et contrôler les résultats.",
-    remember: "Penser au cycle PDCA : Planifier, Déployer, Contrôler, Ajuster.",
-    createdAt: "2024-01-01",
+    def: "Ensemble des techniques permettant de diriger, organiser et coordonner les ressources d'une organisation afin d'atteindre ses objectifs.",
+    example: "Un manager organise le travail de son équipe, répartit les tâches et suit les résultats.",
+    remember: "Le management consiste notamment à organiser, décider, coordonner et motiver.",
     qcm: {
-      question: "Quel est le rôle principal du management ?",
+      question: "Quel est l'objectif principal du management ?",
       answers: [
-        { text: "Diriger et coordonner les ressources", correct: true },
-        { text: "Vendre des produits", correct: false },
-        { text: "Rédiger des contrats juridiques", correct: false }
+        { text: "Atteindre les objectifs de l'organisation", correct: true },
+        { text: "Supprimer tous les salariés", correct: false },
+        { text: "Éviter toute prise de décision", correct: false }
       ]
     }
   },
@@ -33,72 +30,36 @@ const defaultData = [
     id: 2,
     term: "Leadership",
     matiere: "Management",
-    def: "Capacité d'une personne à guider, influencer et motiver un groupe d'individus vers la réalisation d'objectifs communs, en inspirant confiance et adhésion.",
-    example: "Un bon leader sait écouter son équipe, communiquer une vision claire et donner l'exemple.",
-    remember: "Le leader inspire, le manager organise.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "Quelle est la différence clé entre un leader et un manager ?",
-      answers: [
-        { text: "Le leader inspire et motive, le manager organise", correct: true },
-        { text: "Le leader gagne plus d'argent", correct: false },
-        { text: "Il n'y a aucune différence", correct: false }
-      ]
-    }
+    def: "Capacité d'une personne à guider, influencer et motiver un groupe d'individus vers la réalisation d'objectifs communs.",
+    example: "Un responsable qui motive son équipe autour d'un projet fait preuve de leadership.",
+    remember: "Leadership = influencer, guider et motiver.",
   },
 
   {
     id: 3,
     term: "Organigramme",
     matiere: "Management",
-    def: "Représentation graphique de la structure hiérarchique et fonctionnelle d'une organisation, montrant les liens d'autorité et de communication entre les différents postes.",
-    example: "L'organigramme d'une entreprise montre le PDG en haut, puis les directeurs, les chefs de service et les employés.",
-    remember: "Organigramme = représentation de la structure de l'organisation.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "À quoi sert un organigramme ?",
-      answers: [
-        { text: "Représenter la structure hiérarchique", correct: true },
-        { text: "Calculer les salaires", correct: false },
-        { text: "Planifier les vacances", correct: false }
-      ]
-    }
+    def: "Représentation graphique de la structure hiérarchique et fonctionnelle d'une organisation.",
+    example: "L'organigramme d'une entreprise permet de voir qui dépend de quel responsable.",
+    remember: "Il permet de visualiser les relations hiérarchiques.",
   },
 
   {
     id: 4,
     term: "Contrat de travail",
     matiere: "Droit",
-    def: "Convention par laquelle une personne, le salarié, s'engage à travailler pour le compte et sous la direction d'une autre personne, l'employeur, en échange d'une rémunération.",
-    example: "Un CDI est un contrat à durée indéterminée, tandis qu'un CDD a une date de fin fixée dès le départ.",
-    remember: "CDI = durée indéterminée. CDD = durée déterminée.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "Quel est l'élément essentiel d'un contrat de travail ?",
-      answers: [
-        { text: "Une rémunération en échange du travail", correct: true },
-        { text: "Un logement fourni", correct: false },
-        { text: "Une voiture de fonction", correct: false }
-      ]
-    }
+    def: "Convention par laquelle une personne, le salarié, s'engage à travailler pour le compte et sous la direction d'un employeur en échange d'une rémunération.",
+    example: "Un CDI signé entre une entreprise et un salarié constitue un contrat de travail.",
+    remember: "Travail + rémunération + lien de subordination.",
   },
 
   {
     id: 5,
     term: "Personne morale",
     matiere: "Droit",
-    def: "Entité juridique distincte des personnes physiques qui la composent, dotée de droits et d'obligations propres, telle qu'une société, une association ou une collectivité publique.",
-    example: "Une SARL est une personne morale qui peut signer des contrats, posséder des biens et être poursuivie en justice.",
-    remember: "Personne physique = individu. Personne morale = organisation juridiquement reconnue.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "Quelle entité est une personne morale ?",
-      answers: [
-        { text: "Une société (SARL, SAS, SA)", correct: true },
-        { text: "Un individu", correct: false },
-        { text: "Un animal domestique", correct: false }
-      ]
-    }
+    def: "Entité juridique distincte des personnes physiques qui la composent, dotée de droits et d'obligations propres.",
+    example: "Une société ou une association peut être une personne morale.",
+    remember: "Une personne morale possède une existence juridique propre.",
   },
 
   {
@@ -106,534 +67,377 @@ const defaultData = [
     term: "PIB",
     matiere: "Économie",
     def: "Produit Intérieur Brut. Indicateur macroéconomique mesurant la valeur totale des biens et services produits sur le territoire national au cours d'une période donnée.",
-    example: "Si le PIB de la France augmente de 2%, cela signifie que l'économie française a créé davantage de richesse.",
-    remember: "PIB = ce que le pays produit.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "Que mesure le PIB ?",
-      answers: [
-        { text: "La richesse produite sur le territoire national", correct: true },
-        { text: "Le nombre d'habitants", correct: false },
-        { text: "Le taux de chômage", correct: false }
-      ]
-    }
+    example: "Le PIB permet notamment de mesurer la production économique d'un pays.",
+    remember: "PIB = valeur des biens et services produits sur un territoire.",
   },
 
   {
     id: 7,
     term: "Inflation",
     matiere: "Économie",
-    def: "Hausse généralisée et durable du niveau des prix des biens et services dans une économie, entraînant une diminution du pouvoir d'achat de la monnaie.",
-    example: "Avec une inflation de 5%, un produit qui coûtait 100€ peut coûter 105€.",
-    remember: "Inflation = les prix montent, le pouvoir d'achat baisse.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "Quel est l'effet principal de l'inflation ?",
-      answers: [
-        { text: "Diminution du pouvoir d'achat", correct: true },
-        { text: "Augmentation automatique des salaires", correct: false },
-        { text: "Baisse générale des prix", correct: false }
-      ]
-    }
+    def: "Hausse généralisée et durable du niveau des prix des biens et services dans une économie.",
+    example: "Lorsque les prix augmentent durablement, le pouvoir d'achat de la monnaie diminue.",
+    remember: "Inflation = hausse générale et durable des prix.",
   },
 
   {
     id: 8,
     term: "Recrutement",
     matiere: "RH",
-    def: "Processus par lequel une organisation identifie, attire et sélectionne des candidats qualifiés pour pourvoir un poste vacant, en adéquation avec ses besoins et sa culture d'entreprise.",
-    example: "Le recrutement peut passer par des annonces en ligne, des cabinets de recrutement ou du cooptage.",
-    remember: "Recrutement = trouver la bonne personne au bon poste.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "Quel est l'objectif du recrutement ?",
-      answers: [
-        { text: "Trouver le candidat adapté au poste", correct: true },
-        { text: "Réduire les salaires", correct: false },
-        { text: "Augmenter les congés", correct: false }
-      ]
-    }
+    def: "Processus par lequel une organisation identifie, attire et sélectionne des candidats afin de pourvoir un poste vacant.",
+    example: "Une entreprise publie une offre d'emploi puis sélectionne les candidats.",
+    remember: "Recruter = rechercher, sélectionner puis intégrer un candidat.",
   },
 
   {
     id: 9,
     term: "GPEC",
     matiere: "RH",
-    def: "Gestion Prévisionnelle des Emplois et des Compétences. Démarche prospective visant à anticiper les besoins en ressources humaines d'une organisation à moyen terme afin d'adapter les effectifs et les compétences.",
-    example: "Une entreprise qui prévoit de se digitaliser peut anticiper les besoins de formation de ses salariés.",
-    remember: "GPEC = anticiper les besoins futurs en emplois et compétences.",
-    createdAt: "2024-01-01",
-    qcm: {
-      question: "La GPEC vise à :",
-      answers: [
-        { text: "Anticiper les besoins futurs en compétences", correct: true },
-        { text: "Réduire les salaires immédiatement", correct: false },
-        { text: "Embaucher sans stratégie", correct: false }
-      ]
-    }
+    def: "Gestion Prévisionnelle des Emplois et des Compétences. Démarche permettant d'anticiper les besoins futurs d'une organisation en emplois et en compétences.",
+    example: "Une entreprise peut prévoir des formations pour préparer ses salariés à de nouvelles compétences.",
+    remember: "GPEC = anticiper les besoins futurs en emplois et compétences."
   }
 ];
 
 
-// ==================================================
-// ÉTAT GLOBAL
-// ==================================================
+/* =========================================================
+   ÉTAT
+========================================================= */
 
 let definitions = [];
 let currentFilter = "all";
 let searchQuery = "";
-let editingId = null;
+
+let favorites = JSON.parse(
+  localStorage.getItem("lexiprof_favorites") || "[]"
+);
+
+let currentFlashcardIndex = 0;
+let flashcardList = [];
+
+let deferredInstallPrompt = null;
 
 
-// ==================================================
-// UTILITAIRES
-// ==================================================
+/* =========================================================
+   INITIALISATION
+========================================================= */
 
-function $(id) {
-  return document.getElementById(id);
-}
+document.addEventListener("DOMContentLoaded", () => {
 
-function escapeHTML(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+  load();
+
+});
+
+
+/* =========================================================
+   UTILITAIRES
+========================================================= */
 
 function nextId() {
+
   if (!definitions.length) return 1;
 
   return Math.max(
     ...definitions.map(d => Number(d.id) || 0)
   ) + 1;
+
 }
+
 
 function getPassword() {
+
   return localStorage.getItem(PWD_KEY) || DEFAULT_PW;
+
 }
 
-function isNew(createdAt) {
-  if (!createdAt) return false;
 
-  const created = new Date(createdAt);
+function escapeHTML(value) {
 
-  if (Number.isNaN(created.getTime())) {
-    return false;
+  if (value === null || value === undefined) return "";
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+function normalizeDefinition(d) {
+
+  return {
+    id: Number(d.id) || nextId(),
+    term: String(d.term || "").trim(),
+    matiere: String(d.matiere || "Management").trim(),
+    def: String(d.def || d.definition || "").trim(),
+    example: String(d.example || "").trim(),
+    remember: String(d.remember || "").trim(),
+    qcm: normalizeQCM(d.qcm)
+  };
+
+}
+
+
+function normalizeQCM(qcm) {
+
+  if (!qcm) return null;
+
+  const question =
+    qcm.question ||
+    qcm.questionText ||
+    "";
+
+  let answers =
+    qcm.answers ||
+    qcm.choices ||
+    [];
+
+  if (!Array.isArray(answers)) {
+    answers = [];
   }
 
-  const days =
-    (Date.now() - created.getTime()) /
-    (1000 * 60 * 60 * 24);
+  answers = answers.map((a, index) => {
 
-  return days >= 0 && days <= 7;
+    if (typeof a === "string") {
+
+      return {
+        text: a,
+        correct: index === Number(qcm.answer)
+      };
+
+    }
+
+    return {
+      text: String(a.text || a.choice || "").trim(),
+      correct:
+        Boolean(a.correct) ||
+        index === Number(qcm.answer)
+    };
+
+  }).filter(a => a.text);
+
+  if (!question && !answers.length) {
+    return null;
+  }
+
+  return {
+    question: String(question).trim(),
+    answers
+  };
+
 }
 
-function highlight(text, query) {
+
+/* =========================================================
+   HIGHLIGHT RECHERCHE
+========================================================= */
+
+function highlight(text, q) {
+
   const safeText = escapeHTML(text);
 
-  if (!query) return safeText;
+  if (!q) return safeText;
 
-  const escapedQuery = query
-    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped =
+    q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   return safeText.replace(
-    new RegExp(`(${escapedQuery})`, "gi"),
+    new RegExp(`(${escaped})`, "gi"),
     "<mark>$1</mark>"
   );
+
 }
 
 
-// ==================================================
-// FAVORIS
-// ==================================================
+/* =========================================================
+   CHARGEMENT
+========================================================= */
 
-function getFavorites() {
+async function load() {
+
+  setLoading(true);
+
   try {
-    const raw = localStorage.getItem("lexiprof_favorites");
-    const data = raw ? JSON.parse(raw) : [];
 
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
+    if (typeof loadRemote === "function") {
+
+      const remote = await loadRemote();
+
+      if (Array.isArray(remote) && remote.length) {
+
+        definitions =
+          remote.map(normalizeDefinition);
+
+      } else {
+
+        definitions =
+          defaultData.map(normalizeDefinition);
+
+      }
+
+    } else {
+
+      definitions =
+        defaultData.map(normalizeDefinition);
+
+    }
+
+  } catch (error) {
+
+    console.error("Erreur de chargement :", error);
+
+    definitions =
+      defaultData.map(normalizeDefinition);
+
+    showToast("⚠️ Mode hors ligne");
+
   }
-}
-
-function toggleFavorite(id) {
-  const favs = getFavorites();
-  const index = favs.indexOf(id);
-
-  if (index !== -1) {
-    favs.splice(index, 1);
-    showToast("☆ Retiré des favoris");
-  } else {
-    favs.push(id);
-    showToast("★ Ajouté aux favoris");
-  }
-
-  localStorage.setItem(
-    "lexiprof_favorites",
-    JSON.stringify(favs)
-  );
 
   render();
-}
 
+  setTimeout(() => {
 
-// ==================================================
-// HISTORIQUE RECHERCHE
-// ==================================================
+    const loader =
+      document.querySelector(".global-loader");
 
-function getSearchHistory() {
-  try {
-    const raw = localStorage.getItem(
-      "lexiprof_search_history"
-    );
-
-    const data = raw ? JSON.parse(raw) : [];
-
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-function addToHistory(query) {
-  if (!query || !query.trim()) return;
-
-  let history = getSearchHistory();
-
-  history = history.filter(
-    item => item.toLowerCase() !== query.toLowerCase()
-  );
-
-  history.unshift(query.trim());
-
-  history = history.slice(0, 5);
-
-  localStorage.setItem(
-    "lexiprof_search_history",
-    JSON.stringify(history)
-  );
-
-  renderHistory();
-}
-
-function removeFromHistory(query, event) {
-  if (event) {
-    event.stopPropagation();
-  }
-
-  const history = getSearchHistory().filter(
-    item => item !== query
-  );
-
-  localStorage.setItem(
-    "lexiprof_search_history",
-    JSON.stringify(history)
-  );
-
-  renderHistory();
-}
-
-function renderHistory() {
-  const container = $("searchHistory");
-
-  if (!container) return;
-
-  const history = getSearchHistory();
-
-  if (!history.length) {
-    container.innerHTML = "";
-    return;
-  }
-
-  container.innerHTML = history.map(query => {
-    const safe = escapeHTML(query);
-    const encoded = encodeURIComponent(query);
-
-    return `
-      <span
-        class="history-chip"
-        onclick="setSearch(decodeURIComponent('${encoded}'))"
-      >
-        ${safe}
-        <span
-          class="remove-chip"
-          onclick="removeFromHistory(decodeURIComponent('${encoded}'), event)"
-        >✕</span>
-      </span>
-    `;
-  }).join("");
-}
-
-function setSearch(query) {
-  const input = $("searchInput");
-
-  if (!input) return;
-
-  input.value = query;
-  searchQuery = query;
-
-  onSearch();
-}
-
-function clearSearch() {
-  if (searchQuery.trim()) {
-    addToHistory(searchQuery);
-  }
-
-  const input = $("searchInput");
-
-  if (input) {
-    input.value = "";
-  }
-
-  searchQuery = "";
-
-  onSearch();
-}
-
-
-// ==================================================
-// MODE SOMBRE
-// ==================================================
-
-function initTheme() {
-  const saved =
-    localStorage.getItem("lexiprof_theme");
-
-  let isDark;
-
-  if (saved === "dark") {
-    isDark = true;
-  } else if (saved === "light") {
-    isDark = false;
-  } else {
-    isDark =
-      window.matchMedia &&
-      window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-  }
-
-  document.documentElement.setAttribute(
-    "data-theme",
-    isDark ? "dark" : "light"
-  );
-
-  updateThemeIcon(isDark);
-}
-
-function toggleTheme() {
-  const isDark =
-    document.documentElement.getAttribute(
-      "data-theme"
-    ) === "dark";
-
-  const next = isDark ? "light" : "dark";
-
-  document.documentElement.setAttribute(
-    "data-theme",
-    next
-  );
-
-  localStorage.setItem(
-    "lexiprof_theme",
-    next
-  );
-
-  updateThemeIcon(next === "dark");
-}
-
-function updateThemeIcon(isDark) {
-  const moon = $("iconMoon");
-  const sun = $("iconSun");
-
-  if (moon) {
-    moon.style.display =
-      isDark ? "none" : "block";
-  }
-
-  if (sun) {
-    sun.style.display =
-      isDark ? "block" : "none";
-  }
-}
-
-
-// ==================================================
-// COMPTEUR
-// ==================================================
-
-function updateCounter(count) {
-  const element = $("defCounter");
-
-  if (!element) return;
-
-  const total = definitions.length;
-
-  if (
-    currentFilter === "all" &&
-    !searchQuery.trim()
-  ) {
-    element.textContent =
-      `${total} définition${total !== 1 ? "s" : ""} disponible${total !== 1 ? "s" : ""}`;
-  } else {
-    element.textContent =
-      `${count} résultat${count !== 1 ? "s" : ""} sur ${total}`;
-  }
-}
-
-
-// ==================================================
-// SCROLL
-// ==================================================
-
-let scrollObserver = null;
-
-function initScrollObserver() {
-  if (!("IntersectionObserver" in window)) {
-    scrollObserver = null;
-    return;
-  }
-
-  if (scrollObserver) {
-    scrollObserver.disconnect();
-  }
-
-  scrollObserver =
-    new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-
-            if (scrollObserver) {
-              scrollObserver.unobserve(
-                entry.target
-              );
-            }
-          }
-        });
-      },
-      {
-        threshold: 0.05,
-        rootMargin: "0px 0px -20px 0px"
-      }
-    );
-}
-
-function observeCards() {
-  const cards =
-    document.querySelectorAll(
-      ".card:not(.visible)"
-    );
-
-  cards.forEach((card, index) => {
-    card.style.transitionDelay =
-      `${Math.min(index * 40, 300)}ms`;
-
-    if (scrollObserver) {
-      scrollObserver.observe(card);
-    } else {
-      card.classList.add("visible");
+    if (loader) {
+      loader.classList.add("hidden");
     }
-  });
-}
 
-function initScrollTop() {
-  const button = $("scrollTop");
+  }, 300);
 
-  if (!button) return;
-
-  window.addEventListener(
-    "scroll",
-    () => {
-      button.classList.toggle(
-        "visible",
-        window.scrollY > 400
-      );
-    },
-    { passive: true }
-  );
 }
 
 
-// ==================================================
-// RENDU PRINCIPAL
-// ==================================================
+/* =========================================================
+   LOADING
+========================================================= */
 
-function render() {
-  const container = $("cardsContainer");
-  const info = $("resultsInfo");
+function setLoading(on) {
+
+  const container =
+    document.getElementById("cardsContainer");
 
   if (!container) return;
 
-  const query =
+  if (on) {
+
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⏳</div>
+        <h3>Chargement…</h3>
+        <p>Récupération des définitions.</p>
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   FILTRAGE
+========================================================= */
+
+function getFilteredDefinitions() {
+
+  const q =
     searchQuery.toLowerCase().trim();
 
-  let filtered = [...definitions];
+  let filtered =
+    [...definitions];
 
-  // FILTRE MATIÈRE
-  if (currentFilter !== "all") {
-    if (currentFilter === "favorites") {
-      const favs = getFavorites();
+  if (currentFilter === "favorites") {
 
-      filtered = filtered.filter(
-        d => favs.includes(d.id)
+    filtered =
+      filtered.filter(d =>
+        favorites.includes(Number(d.id))
       );
-    } else {
-      filtered = filtered.filter(
+
+  } else if (currentFilter !== "all") {
+
+    filtered =
+      filtered.filter(
         d => d.matiere === currentFilter
       );
-    }
+
   }
 
-  // RECHERCHE
-  if (query) {
-    filtered = filtered.filter(d => {
-      const term =
-        String(d.term || "").toLowerCase();
+  if (q) {
 
-      const definition =
-        String(d.def || "").toLowerCase();
+    filtered =
+      filtered.filter(d => {
 
-      const example =
-        String(d.example || "").toLowerCase();
+        const term =
+          d.term.toLowerCase();
 
-      const remember =
-        String(d.remember || "").toLowerCase();
+        const def =
+          d.def.toLowerCase();
 
-      return (
-        term.includes(query) ||
-        definition.includes(query) ||
-        example.includes(query) ||
-        remember.includes(query)
-      );
-    });
+        return (
+          term.includes(q) ||
+          def.includes(q)
+        );
+
+      });
+
   }
 
-  // TRI
-  filtered.sort((a, b) =>
-    String(a.term || "").localeCompare(
-      String(b.term || ""),
-      "fr"
-    )
+  filtered.sort(
+    (a, b) =>
+      a.term.localeCompare(
+        b.term,
+        "fr"
+      )
   );
 
+  return filtered;
+
+}
+
+
+/* =========================================================
+   RENDER PRINCIPAL
+========================================================= */
+
+function render() {
+
+  const container =
+    document.getElementById("cardsContainer");
+
+  if (!container) return;
+
+  const info =
+    document.getElementById("resultsInfo");
+
+  const filtered =
+    getFilteredDefinitions();
+
   if (info) {
-    info.textContent =
-      (query || currentFilter !== "all")
-        ? `${filtered.length} résultat${filtered.length !== 1 ? "s" : ""}`
-        : "";
+
+    if (
+      searchQuery ||
+      currentFilter !== "all"
+    ) {
+
+      info.textContent =
+        `${filtered.length} résultat${filtered.length !== 1 ? "s" : ""}`;
+
+    } else {
+
+      info.textContent =
+        `${definitions.length} définition${definitions.length !== 1 ? "s" : ""}`;
+
+    }
+
   }
 
-  updateCounter(filtered.length);
+  updateCounter();
 
-  // AUCUN RÉSULTAT
   if (!filtered.length) {
+
     container.innerHTML = `
       <div class="empty-state">
         <div class="icon">🔍</div>
@@ -643,790 +447,731 @@ function render() {
     `;
 
     return;
-  }
 
-  const favorites = getFavorites();
+  }
 
   container.innerHTML =
-    filtered.map(d => {
+    filtered.map(
+      (d, index) =>
+        createCardHTML(d, index)
+    ).join("");
 
-      const id = Number(d.id);
-      const favorite =
-        favorites.includes(d.id) ||
-        favorites.includes(id);
-
-      const nouveau =
-        isNew(d.createdAt);
-
-      const qcm =
-        d.qcm &&
-        Array.isArray(d.qcm.answers);
-
-      return `
-        <div class="card">
-
-          ${
-            nouveau
-              ? `<span class="card-badge-new">Nouveau</span>`
-              : ""
-          }
-
-          <div class="card-top">
-
-            <div class="card-term">
-              ${highlight(d.term, query)}
-            </div>
-
-            <span class="matiere-badge badge-${escapeHTML(d.matiere)}">
-              ${escapeHTML(d.matiere)}
-            </span>
-
-          </div>
-
-          <div class="card-def">
-            ${highlight(d.def, query)}
-          </div>
-
-          ${
-            d.example
-              ? `
-                <details class="card-details">
-                  <summary>💡 Exemple concret</summary>
-                  <div class="details-content">
-                    ${escapeHTML(d.example)}
-                  </div>
-                </details>
-              `
-              : ""
-          }
-
-          ${
-            d.remember
-              ? `
-                <details class="card-details">
-                  <summary>📝 À retenir</summary>
-                  <div class="details-content">
-                    ${escapeHTML(d.remember)}
-                  </div>
-                </details>
-              `
-              : ""
-          }
-
-          ${
-            qcm
-              ? `
-                <details class="card-details">
-                  <summary>❓ Mini QCM</summary>
-
-                  <div class="details-content">
-
-                    <p style="font-weight:600;margin-bottom:10px;">
-                      ${escapeHTML(d.qcm.question)}
-                    </p>
-
-                    ${d.qcm.answers.map(answer => `
-                      <button
-                        class="qcm-btn"
-                        data-correct="${answer.correct}"
-                        onclick="handleQcmClick(this)"
-                      >
-                        ${escapeHTML(answer.text)}
-                      </button>
-                    `).join("")}
-
-                  </div>
-                </details>
-              `
-              : ""
-          }
-
-          <div class="card-actions">
-
-            <button
-              class="card-action-btn favorite-btn ${favorite ? "active" : ""}"
-              onclick="toggleFavorite(${id})"
-              title="${favorite ? "Retirer des favoris" : "Ajouter aux favoris"}"
-            >
-              ${favorite ? "★" : "☆"}
-              <span class="btn-text"> Favori</span>
-            </button>
-
-            <button
-              class="card-action-btn"
-              onclick="shareDefinitionById(${id})"
-              title="Partager"
-            >
-              📤
-              <span class="btn-text"> Partager</span>
-            </button>
-
-            <button
-              class="card-action-btn"
-              onclick="copyDefinitionById(${id})"
-              title="Copier"
-            >
-              📋
-              <span class="btn-text"> Copier</span>
-            </button>
-
-            <button
-              class="card-action-btn"
-              onclick="exportCardToPDF(${id})"
-              title="Exporter en PDF"
-            >
-              📄
-              <span class="btn-text"> PDF</span>
-            </button>
-
-          </div>
-
-        </div>
-      `;
-    }).join("");
-
-  observeCards();
 }
 
 
-// ==================================================
-// QCM
-// ==================================================
+/* =========================================================
+   CARTE
+========================================================= */
 
-function handleQcmClick(button) {
-  if (!button) return;
+function createCardHTML(d, index) {
 
-  const parent =
-    button.closest(".details-content");
+  const isFavorite =
+    favorites.includes(Number(d.id));
 
-  if (!parent) return;
+  return `
+
+    <article
+      class="card"
+      data-id="${d.id}"
+      style="animation-delay:${Math.min(index * 35, 350)}ms"
+    >
+
+      <div class="card-top">
+
+        <div class="card-term">
+          ${highlight(d.term, searchQuery)}
+        </div>
+
+        <span class="matiere-badge badge-${escapeHTML(d.matiere)}">
+          ${escapeHTML(d.matiere)}
+        </span>
+
+      </div>
+
+
+      <div class="card-def">
+
+        ${highlight(d.def, searchQuery)}
+
+      </div>
+
+
+      <div
+        style="
+          display:flex;
+          gap:7px;
+          margin-top:14px;
+        "
+      >
+
+        <button
+          class="open-card-btn"
+          onclick="toggleCard(${d.id}, this)"
+          style="flex:1"
+        >
+          📖 Ouvrir la fiche
+        </button>
+
+        <button
+          class="btn-icon favorite-card-btn"
+          onclick="toggleFavorite(${d.id})"
+          title="Favori"
+          style="
+            flex:0 0 42px;
+            width:42px;
+            height:42px;
+          "
+        >
+          ${isFavorite ? "★" : "☆"}
+        </button>
+
+      </div>
+
+
+      <div
+        class="card-extra"
+        id="card-${d.id}"
+      >
+
+        ${
+          d.example
+            ? `
+              <div class="extra-block">
+                <h4>💡 Exemple concret</h4>
+                <p>${escapeHTML(d.example)}</p>
+              </div>
+            `
+            : ""
+        }
+
+
+        ${
+          d.remember
+            ? `
+              <div class="extra-block">
+                <h4>📝 À retenir</h4>
+                <p>${escapeHTML(d.remember)}</p>
+              </div>
+            `
+            : ""
+        }
+
+
+        ${
+          d.qcm
+            ? createQCMHTML(d)
+            : ""
+        }
+
+      </div>
+
+    </article>
+
+  `;
+
+}
+
+
+/* =========================================================
+   OUVERTURE FICHE
+========================================================= */
+
+function toggleCard(id, button) {
+
+  const extra =
+    document.getElementById(`card-${id}`);
+
+  if (!extra) return;
+
+  const isOpen =
+    extra.classList.contains("open");
+
+  if (isOpen) {
+
+    extra.classList.remove("open");
+
+    button.innerHTML =
+      "📖 Ouvrir la fiche";
+
+  } else {
+
+    extra.classList.add("open");
+
+    button.innerHTML =
+      "📕 Fermer la fiche";
+
+  }
+
+}
+
+
+/* =========================================================
+   QCM HTML
+========================================================= */
+
+function createQCMHTML(d) {
+
+  if (!d.qcm) return "";
+
+  const answers =
+    Array.isArray(d.qcm.answers)
+      ? d.qcm.answers
+      : [];
+
+  if (!answers.length) return "";
+
+  return `
+
+    <div class="extra-block">
+
+      <h4>❓ Mini QCM</h4>
+
+      <p>
+        ${escapeHTML(d.qcm.question)}
+      </p>
+
+      <div class="qcm-container">
+
+        ${answers.map((a, i) => `
+
+          <button
+            class="qcm-btn"
+            onclick="
+              answerQCM(
+                this,
+                ${Boolean(a.correct)},
+                ${d.id}
+              )
+            "
+          >
+            ${escapeHTML(a.text)}
+          </button>
+
+        `).join("")}
+
+      </div>
+
+      <div
+        class="qcm-feedback"
+        id="qcm-feedback-${d.id}"
+      ></div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   QCM
+========================================================= */
+
+function answerQCM(button, correct, id) {
+
+  const card =
+    button.closest(".extra-block");
+
+  if (!card) return;
 
   const buttons =
-    parent.querySelectorAll(".qcm-btn");
+    card.querySelectorAll(".qcm-btn");
 
   buttons.forEach(btn => {
+
     btn.disabled = true;
+
   });
 
-  if (button.dataset.correct === "true") {
+  const feedback =
+    document.getElementById(
+      `qcm-feedback-${id}`
+    );
+
+  if (correct) {
+
     button.classList.add("correct");
+
+    if (feedback) {
+
+      feedback.textContent =
+        "✅ Bonne réponse !";
+
+      feedback.className =
+        "qcm-feedback correct";
+
+    }
+
     showToast("✅ Bonne réponse !");
+
   } else {
+
     button.classList.add("wrong");
 
-    buttons.forEach(btn => {
-      if (btn.dataset.correct === "true") {
-        btn.classList.add("correct");
-      }
-    });
+    if (feedback) {
+
+      feedback.textContent =
+        "❌ Mauvaise réponse.";
+
+      feedback.className =
+        "qcm-feedback wrong";
+
+    }
 
     showToast("❌ Mauvaise réponse");
+
   }
+
 }
 
 
-// ==================================================
-// RECHERCHE
-// ==================================================
+/* =========================================================
+   RECHERCHE
+========================================================= */
 
 function onSearch() {
-  const input = $("searchInput");
+
+  const input =
+    document.getElementById("searchInput");
 
   if (!input) return;
 
-  searchQuery = input.value;
+  searchQuery =
+    input.value;
 
-  const clear = $("searchClear");
-
-  if (clear) {
-    clear.style.display =
-      searchQuery ? "flex" : "none";
-  }
+  updateSearchClear();
 
   render();
+
 }
 
-function setFilter(filter, button) {
-  currentFilter = filter;
+
+function clearSearch() {
+
+  const input =
+    document.getElementById("searchInput");
+
+  if (!input) return;
+
+  input.value = "";
+
+  searchQuery = "";
+
+  updateSearchClear();
+
+  render();
+
+  input.focus();
+
+}
+
+
+function updateSearchClear() {
+
+  const button =
+    document.querySelector(".search-clear");
+
+  if (!button) return;
+
+  button.classList.toggle(
+    "visible",
+    Boolean(searchQuery)
+  );
+
+}
+
+
+/* =========================================================
+   FILTRES
+========================================================= */
+
+function setFilter(filter, btn) {
+
+  currentFilter =
+    filter;
 
   document
     .querySelectorAll(".filter-btn")
-    .forEach(btn => {
-      btn.classList.remove("active");
-    });
+    .forEach(b =>
+      b.classList.remove("active")
+    );
 
-  if (button) {
-    button.classList.add("active");
+  if (btn) {
+
+    btn.classList.add("active");
+
   }
 
   render();
+
 }
 
 
-// ==================================================
-// PARTAGE
-// ==================================================
+/* =========================================================
+   FAVORIS
+========================================================= */
 
-async function shareDefinition(term, def) {
-  const data = {
-    title: `LexiProf — ${term}`,
-    text: `${term}\n\n${def}`,
-    url: window.location.href
-  };
+function toggleFavorite(id) {
 
-  if (
-    navigator.share &&
-    typeof navigator.share === "function"
-  ) {
-    try {
-      await navigator.share(data);
-      return;
-    } catch (error) {
-      if (error.name === "AbortError") {
-        return;
-      }
-    }
-  }
+  id = Number(id);
 
-  copyText(`${term}\n\n${def}`);
-}
+  if (favorites.includes(id)) {
 
-function shareDefinitionById(id) {
-  const d =
-    definitions.find(
-      item => Number(item.id) === Number(id)
-    );
-
-  if (!d) return;
-
-  shareDefinition(d.term, d.def);
-}
-
-
-// ==================================================
-// COPIER
-// ==================================================
-
-async function copyText(text) {
-  try {
-    if (
-      navigator.clipboard &&
-      window.isSecureContext
-    ) {
-      await navigator.clipboard.writeText(text);
-      showToast("📋 Copié !");
-      return;
-    }
-
-    const textarea =
-      document.createElement("textarea");
-
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-
-    document.body.appendChild(textarea);
-    textarea.select();
-
-    document.execCommand("copy");
-
-    textarea.remove();
-
-    showToast("📋 Copié !");
-  } catch {
-    showToast("❌ Impossible de copier");
-  }
-}
-
-function copyDefinition(term, def) {
-  copyText(`${term}\n\n${def}`);
-}
-
-function copyDefinitionById(id) {
-  const d =
-    definitions.find(
-      item => Number(item.id) === Number(id)
-    );
-
-  if (!d) return;
-
-  copyDefinition(d.term, d.def);
-}
-
-
-// ==================================================
-// EXPORT PDF
-// ==================================================
-
-function exportCardToPDF(id) {
-  const d =
-    definitions.find(
-      item => Number(item.id) === Number(id)
-    );
-
-  if (!d) return;
-
-  if (typeof html2pdf !== "function") {
-    showToast("❌ Export PDF indisponible");
-    return;
-  }
-
-  const container =
-    document.createElement("div");
-
-  container.style.padding = "30px";
-  container.style.fontFamily =
-    "'DM Sans', sans-serif";
-  container.style.color = "#1a1814";
-  container.style.background = "#fff";
-  container.style.width = "700px";
-
-  container.innerHTML = `
-    <div style="text-align:center;margin-bottom:30px;">
-      <h1 style="font-family:'Lora',serif;font-size:28px;">
-        LexiProf — Dictionnaire STMG
-      </h1>
-
-      <p style="color:#7a7570;font-size:13px;">
-        Exporté le ${new Date().toLocaleDateString("fr-FR")}
-      </p>
-    </div>
-
-    <div style="
-      margin-bottom:24px;
-      padding-bottom:20px;
-      border-bottom:1px solid #e2ddd5;
-    ">
-
-      <h2 style="
-        font-family:'Lora',serif;
-        font-size:22px;
-        color:#1a1814;
-      ">
-        ${escapeHTML(d.term)}
-      </h2>
-
-      <p style="
-        font-size:11px;
-        font-weight:700;
-        text-transform:uppercase;
-      ">
-        ${escapeHTML(d.matiere)}
-      </p>
-
-      <p style="
-        font-size:14px;
-        line-height:1.7;
-      ">
-        ${escapeHTML(d.def)}
-      </p>
-
-      ${
-        d.example
-          ? `
-            <p style="font-size:13px;color:#7a7570;">
-              <strong>Exemple :</strong>
-              ${escapeHTML(d.example)}
-            </p>
-          `
-          : ""
-      }
-
-      ${
-        d.remember
-          ? `
-            <p style="font-size:13px;color:#7a7570;">
-              <strong>À retenir :</strong>
-              ${escapeHTML(d.remember)}
-            </p>
-          `
-          : ""
-      }
-
-    </div>
-
-    <div style="
-      text-align:center;
-      font-size:11px;
-      color:#b0aba4;
-    ">
-      LexiProf · mobaruom.github.io
-    </div>
-  `;
-
-  document.body.appendChild(container);
-
-  html2pdf()
-    .set({
-      margin: 10,
-      filename:
-        `lexiprof-${String(d.term)
-          .toLowerCase()
-          .replace(/\s+/g, "-")}.pdf`,
-      image: {
-        type: "jpeg",
-        quality: 0.98
-      },
-      html2canvas: {
-        scale: 2,
-        useCORS: true
-      },
-      jsPDF: {
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait"
-      }
-    })
-    .from(container)
-    .save()
-    .then(() => {
-      container.remove();
-      showToast("📄 PDF exporté !");
-    })
-    .catch(error => {
-      console.warn("PDF error:", error);
-
-      container.remove();
-
-      showToast("❌ Erreur export PDF");
-    });
-}
-
-
-// ==================================================
-// FLASHCARDS
-// ==================================================
-
-let flashcardDefs = [];
-let flashcardIndex = 0;
-let flashcardRevealed = false;
-
-function openFlashcard() {
-  let filtered = [...definitions];
-
-  if (currentFilter !== "all") {
-
-    if (currentFilter === "favorites") {
-      const favs = getFavorites();
-
-      filtered = filtered.filter(
-        d => favs.includes(d.id)
+    favorites =
+      favorites.filter(
+        x => x !== id
       );
-    } else {
-      filtered = filtered.filter(
-        d => d.matiere === currentFilter
-      );
-    }
+
+    showToast("☆ Retiré des favoris");
+
+  } else {
+
+    favorites.push(id);
+
+    showToast("★ Ajouté aux favoris");
+
   }
 
-  const query =
-    searchQuery.toLowerCase().trim();
-
-  if (query) {
-    filtered = filtered.filter(d =>
-      String(d.term).toLowerCase().includes(query) ||
-      String(d.def).toLowerCase().includes(query)
-    );
-  }
-
-  if (!filtered.length) {
-    showToast(
-      "⚠️ Aucune définition pour les flashcards"
-    );
-    return;
-  }
-
-  filtered.sort((a, b) =>
-    String(a.term).localeCompare(
-      String(b.term),
-      "fr"
-    )
+  localStorage.setItem(
+    "lexiprof_favorites",
+    JSON.stringify(favorites)
   );
 
-  flashcardDefs = filtered;
-  flashcardIndex = 0;
-  flashcardRevealed = false;
+  render();
 
-  renderFlashcard();
-
-  const overlay =
-    $("flashcardOverlay");
-
-  if (overlay) {
-    overlay.classList.add("open");
-  }
-}
-
-function closeFlashcard(event) {
-  const overlay =
-    $("flashcardOverlay");
-
-  if (!overlay) return;
-
-  if (
-    event &&
-    event.target !== overlay
-  ) {
-    return;
-  }
-
-  overlay.classList.remove("open");
-}
-
-function renderFlashcard() {
-  if (!flashcardDefs.length) return;
-
-  const d =
-    flashcardDefs[flashcardIndex];
-
-  const counter = $("flashcardCounter");
-  const term = $("flashcardTerm");
-  const def = $("flashcardDef");
-  const meta = $("flashcardMeta");
-  const reveal = $("flashcardReveal");
-
-  if (counter) {
-    counter.textContent =
-      `${flashcardIndex + 1} / ${flashcardDefs.length}`;
-  }
-
-  if (term) {
-    term.textContent = d.term;
-  }
-
-  if (def) {
-    def.textContent = d.def;
-  }
-
-  if (meta) {
-    meta.textContent = d.matiere;
-
-    const colors = {
-      Management: ["#dbeafe", "#2563a8"],
-      Droit: ["#fef3c7", "#b45309"],
-      "Économie": ["#dcfce7", "#166534"],
-      RH: ["#ede9fe", "#7c3aed"]
-    };
-
-    const color =
-      colors[d.matiere] ||
-      ["#eee", "#555"];
-
-    meta.style.background =
-      color[0];
-
-    meta.style.color =
-      color[1];
-  }
-
-  flashcardRevealed = false;
-
-  if (reveal) {
-    reveal.style.display = "block";
-  }
-
-  if (def) {
-    def.style.display = "none";
-  }
-
-  if (meta) {
-    meta.style.display = "none";
-  }
-}
-
-function revealFlashcard() {
-  if (flashcardRevealed) return;
-
-  flashcardRevealed = true;
-
-  const reveal = $("flashcardReveal");
-  const def = $("flashcardDef");
-  const meta = $("flashcardMeta");
-
-  if (reveal) {
-    reveal.style.display = "none";
-  }
-
-  if (def) {
-    def.style.display = "block";
-  }
-
-  if (meta) {
-    meta.style.display = "inline-block";
-  }
-}
-
-function nextFlashcard() {
-  if (!flashcardDefs.length) return;
-
-  flashcardIndex =
-    (flashcardIndex + 1) %
-    flashcardDefs.length;
-
-  renderFlashcard();
-}
-
-function prevFlashcard() {
-  if (!flashcardDefs.length) return;
-
-  flashcardIndex =
-    (flashcardIndex - 1 +
-      flashcardDefs.length) %
-    flashcardDefs.length;
-
-  renderFlashcard();
 }
 
 
-// ==================================================
-// ADMIN — MOT DE PASSE
-// ==================================================
+function showFavorites() {
+
+  currentFilter = "favorites";
+
+  document
+    .querySelectorAll(".filter-btn")
+    .forEach(b =>
+      b.classList.remove("active")
+    );
+
+  const favoriteButton =
+    document.querySelector(
+      '[data-filter="favorites"]'
+    );
+
+  if (favoriteButton) {
+
+    favoriteButton.classList.add("active");
+
+  }
+
+  render();
+
+}
+
+
+/* =========================================================
+   COMPTEUR
+========================================================= */
+
+function updateCounter() {
+
+  const counter =
+    document.querySelector(
+      ".definition-counter"
+    );
+
+  if (!counter) return;
+
+  counter.textContent =
+    `${definitions.length} définition${definitions.length !== 1 ? "s" : ""} disponible${definitions.length !== 1 ? "s" : ""}`;
+
+}
+
+
+/* =========================================================
+   MODE SOMBRE
+========================================================= */
+
+function initTheme() {
+
+  const saved =
+    localStorage.getItem(
+      "lexiprof_theme"
+    );
+
+  if (saved === "dark") {
+
+    document.body.classList.add("dark");
+
+  }
+
+  updateThemeButton();
+
+}
+
+
+function toggleTheme() {
+
+  document.body.classList.toggle("dark");
+
+  const dark =
+    document.body.classList.contains("dark");
+
+  localStorage.setItem(
+    "lexiprof_theme",
+    dark ? "dark" : "light"
+  );
+
+  updateThemeButton();
+
+}
+
+
+function updateThemeButton() {
+
+  const button =
+    document.getElementById(
+      "themeToggle"
+    );
+
+  if (!button) return;
+
+  const dark =
+    document.body.classList.contains("dark");
+
+  button.innerHTML =
+    dark ? "☀️" : "🌙";
+
+  button.title =
+    dark
+      ? "Mode clair"
+      : "Mode sombre";
+
+}
+
+
+/* =========================================================
+   AUTHENTIFICATION ADMIN
+========================================================= */
 
 function openAdmin() {
-  const overlay = $("pwdOverlay");
+
+  const input =
+    document.getElementById("pwdInput");
+
+  const error =
+    document.getElementById("pwdError");
+
+  const overlay =
+    document.getElementById("pwdOverlay");
 
   if (!overlay) return;
 
-  const input = $("pwdInput");
-  const error = $("pwdError");
-
   if (input) {
+
     input.value = "";
+
     input.classList.remove("error");
+
   }
 
   if (error) {
+
     error.textContent = "";
+
   }
 
   overlay.classList.add("open");
 
   setTimeout(() => {
+
     if (input) input.focus();
+
   }, 150);
+
 }
+
 
 function closePwdModal() {
-  const overlay = $("pwdOverlay");
+
+  const overlay =
+    document.getElementById(
+      "pwdOverlay"
+    );
 
   if (overlay) {
+
     overlay.classList.remove("open");
+
   }
+
 }
 
+
 function checkPassword() {
-  const input = $("pwdInput");
+
+  const input =
+    document.getElementById("pwdInput");
+
+  const error =
+    document.getElementById("pwdError");
 
   if (!input) return;
 
-  if (input.value === getPassword()) {
+  if (
+    input.value ===
+    getPassword()
+  ) {
+
     closePwdModal();
+
     openAdminPanel();
-    return;
+
+  } else {
+
+    if (error) {
+
+      error.textContent =
+        "Mot de passe incorrect.";
+
+    }
+
+    input.classList.add("error");
+
+    input.value = "";
+
+    setTimeout(() => {
+
+      input.classList.remove("error");
+
+    }, 400);
+
   }
 
-  const error = $("pwdError");
-
-  if (error) {
-    error.textContent =
-      "Mot de passe incorrect.";
-  }
-
-  input.classList.add("error");
-  input.value = "";
-
-  setTimeout(() => {
-    input.classList.remove("error");
-  }, 400);
 }
 
 
-// ==================================================
-// ADMIN — PANNEAU
-// ==================================================
+/* =========================================================
+   ADMIN
+========================================================= */
 
 function openAdminPanel() {
-  cancelEdit();
+
   renderAdminList();
 
   const changePwd =
-    $("changePwdForm");
+    document.getElementById(
+      "changePwdForm"
+    );
 
   if (changePwd) {
+
     changePwd.classList.remove("open");
+
   }
 
-  const overlay = $("overlay");
+  const overlay =
+    document.getElementById(
+      "overlay"
+    );
 
   if (overlay) {
+
     overlay.classList.add("open");
+
   }
+
 }
+
 
 function closeAdmin() {
-  const overlay = $("overlay");
+
+  const overlay =
+    document.getElementById("overlay");
 
   if (overlay) {
+
     overlay.classList.remove("open");
+
   }
+
 }
 
-function handleOverlayClick(event) {
-  const overlay = $("overlay");
+
+function handleOverlayClick(e) {
+
+  const overlay =
+    document.getElementById("overlay");
 
   if (
     overlay &&
-    event.target === overlay
+    e.target === overlay
   ) {
+
     closeAdmin();
+
   }
+
 }
 
 
-// ==================================================
-// ADMIN — LISTE
-// ==================================================
+/* =========================================================
+   LISTE ADMIN
+========================================================= */
 
 function renderAdminList() {
-  const list = $("adminList");
-  const count = $("adminCount");
+
+  const list =
+    document.getElementById(
+      "adminList"
+    );
+
+  const count =
+    document.getElementById(
+      "adminCount"
+    );
 
   if (!list) return;
 
   if (count) {
+
     count.textContent =
       definitions.length;
+
   }
 
   const sorted =
     [...definitions].sort(
       (a, b) =>
-        String(a.term).localeCompare(
-          String(b.term),
+        a.term.localeCompare(
+          b.term,
           "fr"
         )
     );
 
   if (!sorted.length) {
+
     list.innerHTML = `
       <p style="
         color:var(--text-muted);
         font-size:13px;
         text-align:center;
-        padding:16px 0;
+        padding:16px 0
       ">
         Aucune définition.
       </p>
     `;
 
     return;
+
   }
 
   list.innerHTML =
     sorted.map(d => `
+
       <div class="admin-item">
 
         <div>
+
           <div class="admin-item-term">
             ${escapeHTML(d.term)}
           </div>
@@ -1434,21 +1179,22 @@ function renderAdminList() {
           <div class="admin-item-meta">
             ${escapeHTML(d.matiere)}
           </div>
+
         </div>
 
         <div class="admin-item-actions">
 
           <button
             class="btn-edit"
-            onclick="startEdit(${Number(d.id)})"
+            onclick="editDefinition(${d.id})"
             title="Modifier"
           >
-            ✏️
+            ✎
           </button>
 
           <button
             class="btn-del"
-            onclick="deleteDefinition(${Number(d.id)})"
+            onclick="deleteDefinition(${d.id})"
             title="Supprimer"
           >
             ✕
@@ -1457,342 +1203,374 @@ function renderAdminList() {
         </div>
 
       </div>
+
     `).join("");
+
 }
 
 
-// ==================================================
-// ADMIN — MODIFICATION
-// ==================================================
+/* =========================================================
+   AJOUT DÉFINITION
+========================================================= */
 
-function startEdit(id) {
-  const d =
-    definitions.find(
-      item => Number(item.id) === Number(id)
-    );
+async function addDefinition() {
 
-  if (!d) return;
-
-  editingId = Number(id);
-
-  const term = $("formTerm");
-  const matiere = $("formMatiere");
-  const def = $("formDef");
-  const example = $("formExample");
-  const remember = $("formRemember");
-
-  if (term) term.value = d.term;
-  if (matiere) matiere.value = d.matiere;
-  if (def) def.value = d.def;
-
-  if (example) {
-    example.value = d.example || "";
-  }
-
-  if (remember) {
-    remember.value = d.remember || "";
-  }
-
-  const title = $("formTitle");
-  const action = $("btnFormAction");
-  const cancel = $("btnCancelEdit");
-
-  if (title) {
-    title.textContent =
-      "Modifier la définition";
-  }
-
-  if (action) {
-    action.textContent =
-      "💾 Enregistrer";
-  }
-
-  if (cancel) {
-    cancel.style.display = "block";
-  }
-
-  const section =
-    document.querySelector(".form-section");
-
-  if (section) {
-    section.scrollIntoView({
-      behavior: "smooth"
-    });
-  }
-}
-
-function cancelEdit() {
-  editingId = null;
-
-  const term = $("formTerm");
-  const matiere = $("formMatiere");
-  const def = $("formDef");
-  const example = $("formExample");
-  const remember = $("formRemember");
-
-  if (term) term.value = "";
-
-  if (matiere) {
-    matiere.value = "Management";
-  }
-
-  if (def) def.value = "";
-  if (example) example.value = "";
-  if (remember) remember.value = "";
-
-  const title = $("formTitle");
-  const action = $("btnFormAction");
-  const cancel = $("btnCancelEdit");
-
-  if (title) {
-    title.textContent =
-      "Ajouter une définition";
-  }
-
-  if (action) {
-    action.textContent =
-      "+ Ajouter";
-  }
-
-  if (cancel) {
-    cancel.style.display = "none";
-  }
-}
-
-async function handleFormAction() {
-  if (editingId !== null) {
-    await updateDefinition();
-  } else {
-    await addDefinition();
-  }
-}
-
-async function updateDefinition() {
   const term =
-    $("formTerm")?.value.trim();
+    document.getElementById(
+      "formTerm"
+    )?.value.trim();
 
   const matiere =
-    $("formMatiere")?.value;
+    document.getElementById(
+      "formMatiere"
+    )?.value;
 
   const def =
-    $("formDef")?.value.trim();
-
-  const example =
-    $("formExample")?.value.trim();
-
-  const remember =
-    $("formRemember")?.value.trim();
+    document.getElementById(
+      "formDef"
+    )?.value.trim();
 
   if (!term || !def) {
+
     showToast(
       "⚠️ Remplis le terme et la définition !"
     );
+
     return;
+
   }
-
-  const index =
-    definitions.findIndex(
-      d => Number(d.id) === Number(editingId)
-    );
-
-  if (index === -1) return;
 
   const duplicate =
     definitions.find(
       d =>
-        Number(d.id) !== Number(editingId) &&
-        String(d.term).toLowerCase() ===
+        d.term.toLowerCase() ===
           term.toLowerCase() &&
         d.matiere === matiere
     );
 
   if (duplicate) {
+
     showToast(
       "⚠️ Ce terme existe déjà."
     );
+
     return;
+
   }
 
-  definitions[index] = {
-    ...definitions[index],
+  const example =
+    document.getElementById(
+      "formExample"
+    )?.value.trim() || "";
+
+  const remember =
+    document.getElementById(
+      "formRemember"
+    )?.value.trim() || "";
+
+  definitions.push({
+
+    id: nextId(),
+
     term,
+
     matiere,
+
     def,
-    example: example || undefined,
-    remember: remember || undefined
-  };
+
+    example,
+
+    remember,
+
+    qcm: null
+
+  });
 
   showToast("⏳ Sauvegarde…");
 
   try {
+
     await saveRemote();
 
     render();
+
     renderAdminList();
 
-    cancelEdit();
+    clearDefinitionForm();
 
     showToast(
-      "✅ Définition modifiée !"
+      "✅ Définition ajoutée !"
     );
+
   } catch (error) {
+
     console.error(error);
+
     showToast(
-      "⚠️ Modification enregistrée localement."
+      "⚠️ Erreur de sauvegarde."
     );
+
   }
+
 }
 
 
-// ==================================================
-// ADMIN — AJOUT
-// ==================================================
+/* =========================================================
+   VIDER FORMULAIRE
+========================================================= */
 
-async function addDefinition() {
+function clearDefinitionForm() {
+
+  [
+    "formTerm",
+    "formDef",
+    "formExample",
+    "formRemember"
+  ].forEach(id => {
+
+    const el =
+      document.getElementById(id);
+
+    if (el) el.value = "";
+
+  });
+
+}
+
+
+/* =========================================================
+   MODIFICATION
+========================================================= */
+
+function editDefinition(id) {
+
+  const d =
+    definitions.find(
+      x => Number(x.id) === Number(id)
+    );
+
+  if (!d) return;
+
   const term =
-    $("formTerm")?.value.trim();
+    document.getElementById("formTerm");
 
   const matiere =
-    $("formMatiere")?.value;
+    document.getElementById("formMatiere");
 
   const def =
-    $("formDef")?.value.trim();
+    document.getElementById("formDef");
 
   const example =
-    $("formExample")?.value.trim();
+    document.getElementById("formExample");
 
   const remember =
-    $("formRemember")?.value.trim();
+    document.getElementById("formRemember");
 
-  if (!term || !def) {
-    showToast(
-      "⚠️ Remplis le terme et la définition !"
+  if (term) term.value = d.term;
+
+  if (matiere) matiere.value = d.matiere;
+
+  if (def) def.value = d.def;
+
+  if (example) example.value = d.example || "";
+
+  if (remember) remember.value = d.remember || "";
+
+  window.editingDefinitionId =
+    Number(id);
+
+  showToast(
+    "✏️ Modification en cours"
+  );
+
+  const admin =
+    document.querySelector(
+      ".admin-panel"
     );
-    return;
+
+  if (admin) {
+
+    admin.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
   }
 
-  const duplicate =
+}
+
+
+async function saveEditedDefinition() {
+
+  const id =
+    window.editingDefinitionId;
+
+  if (!id) {
+
+    await addDefinition();
+
+    return;
+
+  }
+
+  const d =
     definitions.find(
-      d =>
-        String(d.term).toLowerCase() ===
-          term.toLowerCase() &&
-        d.matiere === matiere
+      x => Number(x.id) === Number(id)
     );
 
-  if (duplicate) {
-    showToast(
-      "⚠️ Ce terme existe déjà."
-    );
-    return;
-  }
+  if (!d) return;
 
-  const newDefinition = {
-    id: nextId(),
-    term,
-    matiere,
-    def,
-    createdAt:
-      new Date()
-        .toISOString()
-        .slice(0, 10),
-    example:
-      example || undefined,
-    remember:
-      remember || undefined
-  };
+  d.term =
+    document.getElementById(
+      "formTerm"
+    )?.value.trim();
 
-  definitions.push(newDefinition);
+  d.matiere =
+    document.getElementById(
+      "formMatiere"
+    )?.value;
 
-  showToast("⏳ Sauvegarde…");
+  d.def =
+    document.getElementById(
+      "formDef"
+    )?.value.trim();
+
+  d.example =
+    document.getElementById(
+      "formExample"
+    )?.value.trim() || "";
+
+  d.remember =
+    document.getElementById(
+      "formRemember"
+    )?.value.trim() || "";
 
   await saveRemote();
 
+  window.editingDefinitionId =
+    null;
+
+  clearDefinitionForm();
+
   render();
+
   renderAdminList();
 
-  if ($("formTerm")) {
-    $("formTerm").value = "";
-  }
-
-  if ($("formDef")) {
-    $("formDef").value = "";
-  }
-
-  if ($("formExample")) {
-    $("formExample").value = "";
-  }
-
-  if ($("formRemember")) {
-    $("formRemember").value = "";
-  }
-
   showToast(
-    "✅ Définition ajoutée !"
+    "✅ Définition modifiée !"
   );
+
 }
 
 
-// ==================================================
-// ADMIN — SUPPRESSION
-// ==================================================
+/* =========================================================
+   SUPPRESSION
+========================================================= */
 
 async function deleteDefinition(id) {
+
   if (
     !confirm(
       "Supprimer cette définition ?"
     )
-  ) {
-    return;
-  }
+  ) return;
 
   definitions =
     definitions.filter(
-      d => Number(d.id) !== Number(id)
+      d =>
+        Number(d.id) !==
+        Number(id)
     );
 
-  await saveRemote();
+  favorites =
+    favorites.filter(
+      x =>
+        Number(x) !==
+        Number(id)
+    );
 
-  render();
-  renderAdminList();
-
-  showToast(
-    "🗑 Définition supprimée."
+  localStorage.setItem(
+    "lexiprof_favorites",
+    JSON.stringify(favorites)
   );
+
+  try {
+
+    await saveRemote();
+
+    render();
+
+    renderAdminList();
+
+    showToast(
+      "🗑 Définition supprimée."
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    showToast(
+      "⚠️ Erreur de sauvegarde."
+    );
+
+  }
+
 }
 
 
-// ==================================================
-// CHANGEMENT MOT DE PASSE
-// ==================================================
+/* =========================================================
+   MOT DE PASSE
+========================================================= */
 
 function toggleChangePwd() {
+
   const form =
-    $("changePwdForm");
+    document.getElementById(
+      "changePwdForm"
+    );
 
   if (form) {
-    form.classList.toggle("open");
+
+    form.classList.toggle(
+      "open"
+    );
+
   }
+
 }
 
+
 function changePassword() {
+
   const p1 =
-    $("newPwd1")?.value;
+    document.getElementById(
+      "newPwd1"
+    )?.value;
 
   const p2 =
-    $("newPwd2")?.value;
+    document.getElementById(
+      "newPwd2"
+    )?.value;
 
   if (!p1 || p1.length < 4) {
+
     showToast(
       "⚠️ Minimum 4 caractères."
     );
+
     return;
+
   }
 
   if (p1 !== p2) {
+
     showToast(
       "⚠️ Les mots de passe ne correspondent pas."
     );
+
     return;
+
   }
 
   localStorage.setItem(
@@ -1800,139 +1578,1065 @@ function changePassword() {
     p1
   );
 
-  if ($("newPwd1")) {
-    $("newPwd1").value = "";
-  }
+  document.getElementById(
+    "newPwd1"
+  ).value = "";
 
-  if ($("newPwd2")) {
-    $("newPwd2").value = "";
-  }
+  document.getElementById(
+    "newPwd2"
+  ).value = "";
 
-  const form =
-    $("changePwdForm");
-
-  if (form) {
-    form.classList.remove("open");
-  }
+  document.getElementById(
+    "changePwdForm"
+  )?.classList.remove("open");
 
   showToast(
     "🔑 Mot de passe mis à jour !"
   );
+
 }
 
 
-// ==================================================
-// TOAST
-// ==================================================
+/* =========================================================
+   IMPORT JSON
+========================================================= */
+
+function handleJSONImport(event) {
+
+  const file =
+    event.target.files?.[0];
+
+  if (!file) return;
+
+  const reader =
+    new FileReader();
+
+  reader.onload = async e => {
+
+    try {
+
+      const parsed =
+        JSON.parse(
+          e.target.result
+        );
+
+      const imported =
+        Array.isArray(parsed)
+          ? parsed
+          : Array.isArray(parsed.definitions)
+            ? parsed.definitions
+            : [];
+
+      if (!imported.length) {
+
+        throw new Error(
+          "Aucune définition trouvée."
+        );
+
+      }
+
+      let added = 0;
+
+      imported.forEach(raw => {
+
+        const d =
+          normalizeDefinition(raw);
+
+        if (!d.term || !d.def) return;
+
+        const exists =
+          definitions.some(
+            existing =>
+              existing.term.toLowerCase() ===
+                d.term.toLowerCase() &&
+              existing.matiere ===
+                d.matiere
+          );
+
+        if (exists) return;
+
+        d.id = nextId();
+
+        definitions.push(d);
+
+        added++;
+
+      });
+
+      await saveRemote();
+
+      render();
+
+      renderAdminList();
+
+      showToast(
+        `✅ ${added} définition${added !== 1 ? "s" : ""} importée${added !== 1 ? "s" : ""}`
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      showToast(
+        "❌ JSON invalide."
+      );
+
+    }
+
+    event.target.value = "";
+
+  };
+
+  reader.readAsText(file);
+
+}
+
+
+/* =========================================================
+   IMPORT JSON VIA TEXTE
+========================================================= */
+
+async function importJSONText() {
+
+  const textarea =
+    document.getElementById(
+      "jsonInput"
+    );
+
+  if (!textarea) return;
+
+  const text =
+    textarea.value.trim();
+
+  if (!text) {
+
+    showToast(
+      "⚠️ Colle d'abord ton JSON."
+    );
+
+    return;
+
+  }
+
+  try {
+
+    const parsed =
+      JSON.parse(text);
+
+    const imported =
+      Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed.definitions)
+          ? parsed.definitions
+          : [];
+
+    if (!imported.length) {
+
+      throw new Error(
+        "Format vide."
+      );
+
+    }
+
+    let added = 0;
+
+    imported.forEach(raw => {
+
+      const d =
+        normalizeDefinition(raw);
+
+      if (!d.term || !d.def) return;
+
+      const exists =
+        definitions.some(
+          existing =>
+            existing.term.toLowerCase() ===
+              d.term.toLowerCase() &&
+            existing.matiere ===
+              d.matiere
+        );
+
+      if (exists) return;
+
+      d.id =
+        nextId();
+
+      definitions.push(d);
+
+      added++;
+
+    });
+
+    await saveRemote();
+
+    render();
+
+    renderAdminList();
+
+    textarea.value = "";
+
+    showToast(
+      `✅ ${added} définition${added !== 1 ? "s" : ""} importée${added !== 1 ? "s" : ""}`
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    showToast(
+      "❌ JSON invalide ou mauvais format."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EXPORT JSON
+========================================================= */
+
+function exportJSON() {
+
+  const data =
+    JSON.stringify(
+      definitions,
+      null,
+      2
+    );
+
+  const blob =
+    new Blob(
+      [data],
+      {
+        type:
+          "application/json"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement("a");
+
+  a.href = url;
+
+  a.download =
+    "lexiprof-definitions.json";
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  showToast(
+    "📦 JSON exporté !"
+  );
+
+}
+
+
+/* =========================================================
+   FLASHCARDS
+========================================================= */
+
+function openFlashcards() {
+
+  flashcardList =
+    getFilteredDefinitions();
+
+  if (!flashcardList.length) {
+
+    showToast(
+      "⚠️ Aucune définition disponible."
+    );
+
+    return;
+
+  }
+
+  currentFlashcardIndex = 0;
+
+  renderFlashcard();
+
+}
+
+
+function renderFlashcard() {
+
+  const d =
+    flashcardList[
+      currentFlashcardIndex
+    ];
+
+  if (!d) return;
+
+  const modal =
+    document.getElementById(
+      "flashcardModal"
+    );
+
+  if (!modal) {
+
+    createFlashcardModal();
+
+  }
+
+  const title =
+    document.getElementById(
+      "flashcardTerm"
+    );
+
+  const def =
+    document.getElementById(
+      "flashcardDef"
+    );
+
+  const matiere =
+    document.getElementById(
+      "flashcardMatiere"
+    );
+
+  const counter =
+    document.getElementById(
+      "flashcardCounter"
+    );
+
+  const reveal =
+    document.getElementById(
+      "flashcardReveal"
+    );
+
+  if (title)
+    title.textContent =
+      d.term;
+
+  if (def)
+    def.textContent =
+      d.def;
+
+  if (matiere)
+    matiere.textContent =
+      d.matiere;
+
+  if (counter)
+    counter.textContent =
+      `${currentFlashcardIndex + 1} / ${flashcardList.length}`;
+
+  if (reveal)
+    reveal.style.display =
+      "block";
+
+  document
+    .getElementById(
+      "flashcardModal"
+    )
+    ?.classList.add("open");
+
+}
+
+
+function createFlashcardModal() {
+
+  const modal =
+    document.createElement("div");
+
+  modal.id =
+    "flashcardModal";
+
+  modal.className =
+    "overlay";
+
+  modal.innerHTML = `
+
+    <div class="flashcard-modal">
+
+      <div class="flashcard-header">
+
+        <span
+          id="flashcardCounter"
+          class="flashcard-counter"
+        ></span>
+
+        <button
+          class="btn-close"
+          onclick="closeFlashcards()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div
+        class="flashcard-body"
+        onclick="revealFlashcard()"
+      >
+
+        <div
+          id="flashcardMatiere"
+          class="flashcard-matiere"
+        ></div>
+
+        <div
+          id="flashcardTerm"
+          class="flashcard-term"
+        ></div>
+
+        <div
+          id="flashcardReveal"
+          class="flashcard-reveal"
+        >
+          Cliquez pour voir la définition
+        </div>
+
+        <div
+          id="flashcardDef"
+          class="flashcard-def"
+          style="display:none"
+        ></div>
+
+      </div>
+
+
+      <div class="flashcard-actions">
+
+        <button
+          class="flashcard-btn"
+          onclick="previousFlashcard()"
+        >
+          ← Précédente
+        </button>
+
+        <button
+          class="flashcard-btn primary"
+          onclick="nextFlashcard()"
+        >
+          Suivante →
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+  document.body.appendChild(modal);
+
+}
+
+
+function revealFlashcard() {
+
+  const def =
+    document.getElementById(
+      "flashcardDef"
+    );
+
+  const reveal =
+    document.getElementById(
+      "flashcardReveal"
+    );
+
+  if (!def || !reveal) return;
+
+  const hidden =
+    def.style.display === "none";
+
+  def.style.display =
+    hidden ? "block" : "none";
+
+  reveal.textContent =
+    hidden
+      ? "Cliquez pour masquer"
+      : "Cliquez pour voir la définition";
+
+}
+
+
+function nextFlashcard() {
+
+  if (!flashcardList.length) return;
+
+  currentFlashcardIndex =
+    (currentFlashcardIndex + 1) %
+    flashcardList.length;
+
+  renderFlashcard();
+
+}
+
+
+function previousFlashcard() {
+
+  if (!flashcardList.length) return;
+
+  currentFlashcardIndex =
+    (currentFlashcardIndex - 1 +
+      flashcardList.length) %
+    flashcardList.length;
+
+  renderFlashcard();
+
+}
+
+
+function closeFlashcards() {
+
+  document
+    .getElementById(
+      "flashcardModal"
+    )
+    ?.classList.remove("open");
+
+}
+
+
+/* =========================================================
+   DÉFINITION ALÉATOIRE
+========================================================= */
+
+function openRandomDefinition() {
+
+  if (!definitions.length) {
+
+    showToast(
+      "⚠️ Aucune définition."
+    );
+
+    return;
+
+  }
+
+  const d =
+    definitions[
+      Math.floor(
+        Math.random() *
+        definitions.length
+      )
+    ];
+
+  let modal =
+    document.getElementById(
+      "randomModal"
+    );
+
+  if (!modal) {
+
+    modal =
+      document.createElement(
+        "div"
+      );
+
+    modal.id =
+      "randomModal";
+
+    modal.className =
+      "random-modal";
+
+    document.body.appendChild(
+      modal
+    );
+
+  }
+
+  modal.innerHTML = `
+
+    <div class="random-modal-card">
+
+      <button
+        class="random-close"
+        onclick="closeRandomDefinition()"
+      >
+        ×
+      </button>
+
+      <span class="random-label">
+        DÉFINITION ALÉATOIRE
+      </span>
+
+      <span class="random-matiere">
+        ${escapeHTML(d.matiere)}
+      </span>
+
+      <h2>
+        ${escapeHTML(d.term)}
+      </h2>
+
+      <p>
+        ${escapeHTML(d.def)}
+      </p>
+
+      <div class="random-actions">
+
+        <button
+          onclick="openRandomDefinition()"
+        >
+          🎲 Une autre
+        </button>
+
+        <button
+          class="secondary"
+          onclick="closeRandomDefinition()"
+        >
+          Fermer
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+  modal.classList.add("open");
+
+}
+
+
+function closeRandomDefinition() {
+
+  document
+    .getElementById(
+      "randomModal"
+    )
+    ?.classList.remove("open");
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
 
 function showToast(message) {
-  const toast = $("toast");
 
-  if (!toast) return;
+  let toast =
+    document.getElementById(
+      "toast"
+    );
 
-  toast.textContent = message;
+  if (!toast) {
 
-  toast.classList.add("show");
+    toast =
+      document.createElement(
+        "div"
+      );
 
-  clearTimeout(toast._timer);
+    toast.id =
+      "toast";
+
+    toast.className =
+      "toast";
+
+    document.body.appendChild(
+      toast
+    );
+
+  }
+
+  toast.textContent =
+    message;
+
+  toast.classList.add(
+    "show"
+  );
+
+  clearTimeout(
+    toast._timer
+  );
 
   toast._timer =
     setTimeout(() => {
-      toast.classList.remove("show");
+
+      toast.classList.remove(
+        "show"
+      );
+
     }, 2500);
+
 }
 
 
-// ==================================================
-// INITIALISATION
-// ==================================================
+/* =========================================================
+   RACCOURCIS CLAVIER
+========================================================= */
 
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+function initKeyboardShortcuts() {
 
-    // Thème
-    initTheme();
+  document.addEventListener(
+    "keydown",
+    e => {
 
-    // Animations
-    initScrollObserver();
-    initScrollTop();
+      if (
+        e.key === "/" &&
+        document.activeElement.tagName !==
+          "INPUT" &&
+        document.activeElement.tagName !==
+          "TEXTAREA"
+      ) {
 
-    // Historique
-    renderHistory();
+        e.preventDefault();
 
-    // Bouton thème
-    const themeButton =
-      $("themeToggle");
+        document
+          .getElementById(
+            "searchInput"
+          )
+          ?.focus();
 
-    if (themeButton) {
-      themeButton.addEventListener(
-        "click",
-        toggleTheme
-      );
-    }
+      }
 
-    // Bouton flashcard
-    const flashcardButton =
-      $("btnFlashcard");
 
-    if (flashcardButton) {
-      flashcardButton.addEventListener(
-        "click",
-        openFlashcard
-      );
-    }
+      if (
+        e.key === "Escape"
+      ) {
 
-    // Entrée recherche
-    const searchInput =
-      $("searchInput");
+        closePwdModal();
+        closeAdmin();
+        closeFlashcards();
+        closeRandomDefinition();
 
-    if (searchInput) {
-
-      searchInput.addEventListener(
-        "keydown",
-        event => {
-
-          if (event.key === "Enter") {
-            addToHistory(
-              searchInput.value
-            );
-          }
-
-        }
-      );
+      }
 
     }
+  );
 
-    /*
-      IMPORTANT :
-      On ne fait PAS load() ici si storage.js
-      n'est pas chargé.
+}
 
-      Dans ton HTML :
-      config.js
-      storage.js
-      app.js
 
-      Donc storage.js possède déjà load().
-    */
+/* =========================================================
+   SCROLL
+========================================================= */
 
-    if (typeof load === "function") {
-      load();
-    } else {
-      console.error(
-        "LexiProf : storage.js introuvable."
-      );
+function initScrollEffects() {
 
-      definitions =
-        [...defaultData];
+  const scrollTop =
+    document.querySelector(
+      ".scroll-top"
+    );
 
-      render();
+  const progress =
+    document.querySelector(
+      ".reading-progress"
+    );
+
+  window.addEventListener(
+    "scroll",
+    () => {
+
+      const scroll =
+        window.scrollY;
+
+      if (scrollTop) {
+
+        scrollTop.classList.toggle(
+          "visible",
+          scroll > 400
+        );
+
+      }
+
+      if (progress) {
+
+        const height =
+          document.documentElement
+            .scrollHeight -
+          window.innerHeight;
+
+        const percentage =
+          height > 0
+            ? (scroll / height) * 100
+            : 0;
+
+        progress.style.width =
+          `${percentage}%`;
+
+      }
+
+    },
+    {
+      passive: true
     }
+  );
+
+}
+
+
+function scrollToTop() {
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+}
+
+
+/* =========================================================
+   INSTALLATION PWA
+========================================================= */
+
+function initInstallPrompt() {
+
+  window.addEventListener(
+    "beforeinstallprompt",
+    e => {
+
+      e.preventDefault();
+
+      deferredInstallPrompt =
+        e;
+
+      const button =
+        document.querySelector(
+          ".install-app-btn"
+        );
+
+      if (button) {
+
+        button.classList.add(
+          "visible"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+async function installApp() {
+
+  if (!deferredInstallPrompt) {
+
+    showToast(
+      "ℹ️ Utilise le menu Partager de ton navigateur pour ajouter LexiProf."
+    );
+
+    return;
 
   }
-);
+
+  deferredInstallPrompt.prompt();
+
+  const result =
+    await deferredInstallPrompt.userChoice;
+
+  if (
+    result.outcome ===
+    "accepted"
+  ) {
+
+    showToast(
+      "✅ LexiProf ajouté à l'écran d'accueil !"
+    );
+
+  }
+
+  deferredInstallPrompt =
+    null;
+
+}
+
+
+
+
+  /*
+    Si ton storage.js possède déjà
+    sa propre fonction saveRemote(),
+    elle reste utilisée.
+
+    Sinon, on conserve les données
+    localement pour éviter de perdre
+    les modifications.
+  */
+
+  localStorage.setItem(
+    "lexiprof_local_data",
+    JSON.stringify(
+      definitions
+    )
+  );
+
+}
+
+
+/* =========================================================
+   FALLBACK LOCAL
+========================================================= */
+
+function loadLocalFallback() {
+
+  try {
+
+    const local =
+      JSON.parse(
+        localStorage.getItem(
+          "lexiprof_local_data"
+        ) || "[]"
+      );
+
+    if (
+      Array.isArray(local) &&
+      local.length
+    ) {
+
+      definitions =
+        local.map(
+          normalizeDefinition
+        );
+
+      return true;
+
+    }
+
+  } catch (e) {
+
+    console.error(e);
+
+  }
+
+  return false;
+
+}
+
+
+/* =========================================================
+   NOTIFICATION BIENVENUE
+========================================================= */
+
+function showWelcome() {
+
+  let banner =
+    document.querySelector(
+      ".welcome-banner"
+    );
+
+  if (!banner) return;
+
+  banner.classList.add(
+    "show"
+  );
+
+  setTimeout(() => {
+
+    banner.classList.remove(
+      "show"
+    );
+
+  }, 5000);
+
+}
+
+
+/* =========================================================
+   EXPORT GLOBAL
+========================================================= */
+
+window.render =
+  render;
+
+window.toggleCard =
+  toggleCard;
+
+window.answerQCM =
+  answerQCM;
+
+window.onSearch =
+  onSearch;
+
+window.clearSearch =
+  clearSearch;
+
+window.setFilter =
+  setFilter;
+
+window.toggleFavorite =
+  toggleFavorite;
+
+window.showFavorites =
+  showFavorites;
+
+window.toggleTheme =
+  toggleTheme;
+
+window.openAdmin =
+  openAdmin;
+
+window.closePwdModal =
+  closePwdModal;
+
+window.checkPassword =
+  checkPassword;
+
+window.openAdminPanel =
+  openAdminPanel;
+
+window.closeAdmin =
+  closeAdmin;
+
+window.handleOverlayClick =
+  handleOverlayClick;
+
+window.addDefinition =
+  addDefinition;
+
+window.editDefinition =
+  editDefinition;
+
+window.saveEditedDefinition =
+  saveEditedDefinition;
+
+window.deleteDefinition =
+  deleteDefinition;
+
+window.toggleChangePwd =
+  toggleChangePwd;
+
+window.changePassword =
+  changePassword;
+
+window.handleJSONImport =
+  handleJSONImport;
+
+window.importJSONText =
+  importJSONText;
+
+window.exportJSON =
+  exportJSON;
+
+window.openFlashcards =
+  openFlashcards;
+
+window.nextFlashcard =
+  nextFlashcard;
+
+window.previousFlashcard =
+  previousFlashcard;
+
+window.closeFlashcards =
+  closeFlashcards;
+
+window.openRandomDefinition =
+  openRandomDefinition;
+
+window.closeRandomDefinition =
+  closeRandomDefinition;
+
+window.scrollToTop =
+  scrollToTop;
+
+window.installApp =
+  installApp;
+
+window.showToast =
+  showToast;
+
+
+/* =========================================================
+   FIN
+========================================================= */
 
 console.log(
-  "LexiProf — app.js chargé correctement ✅"
+  "📚 LexiProf — app.js chargé"
 );
