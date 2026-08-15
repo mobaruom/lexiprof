@@ -2443,34 +2443,7 @@ async function installApp() {
 }
 
 
-/* =========================================================
-   SAUVEGARDE DISTANTE
-========================================================= */
 
-async function saveRemote() {
-
-  if (
-    typeof window.saveRemote ===
-    "function" &&
-    window.saveRemote !== saveRemote
-  ) {
-
-    return await window.saveRemote(
-      definitions
-    );
-
-  }
-
-  if (
-    typeof saveDefinitions ===
-    "function"
-  ) {
-
-    return await saveDefinitions(
-      definitions
-    );
-
-  }
 
   /*
     Si ton storage.js possède déjà
