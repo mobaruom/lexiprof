@@ -10,7 +10,6 @@ async function loadRemote() {
 
   const controller = new AbortController();
 
-  // Empêche JSONBin de bloquer LexiProf indéfiniment
   const timeout = setTimeout(() => {
     controller.abort();
   }, 8000);
@@ -28,17 +27,12 @@ async function loadRemote() {
     );
 
     if (!response.ok) {
-      throw new Error(
-        `JSONBin HTTP ${response.status}`
-      );
+      throw new Error(`JSONBin HTTP ${response.status}`);
     }
 
     const data = await response.json();
 
-    // JSONBin peut renvoyer les données directement
-    // ou dans "record"
     const record = data?.record ?? data;
-
     const defs = record?.definitions;
 
     if (!Array.isArray(defs)) {
@@ -51,6 +45,10 @@ async function loadRemote() {
     localStorage.setItem(
       "lexiprof_fallback",
       JSON.stringify(defs)
+    );
+
+    console.log(
+      `✅ JSONBin chargé : ${defs.length} définitions`
     );
 
     return defs;
@@ -79,11 +77,13 @@ async function loadRemote() {
         if (Array.isArray(defs)) {
 
           console.log(
-            "✅ Définitions locales chargées."
+            `✅ Définitions locales chargées : ${defs.length}`
           );
 
           return defs;
+
         }
+
       }
 
     } catch (localError) {
@@ -92,6 +92,7 @@ async function loadRemote() {
         "⚠️ Erreur avec les données locales :",
         localError
       );
+
     }
 
     // --------------------------------------------------
@@ -109,6 +110,49 @@ async function loadRemote() {
     clearTimeout(timeout);
 
   }
+
+}
+
+
+// --------------------------------------------------
+// FONCTION DE CHARGEMENT PRINCIPALE
+// --------------------------------------------------
+// IMPORTANT : app.js appelle load()
+// --------------------------------------------------
+
+async function load() {
+
+  setLoading(true);
+
+  try {
+
+    const defs = await loadRemote();
+
+    if (Array.isArray(defs)) {
+
+      definitions = defs;
+
+    } else {
+
+      definitions = [...defaultData];
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "❌ Erreur globale de chargement :",
+      error
+    );
+
+    definitions = [...defaultData];
+
+  }
+
+  setLoading(false);
+
+  render();
+
 }
 
 
@@ -137,7 +181,6 @@ async function saveRemote() {
       );
     }
 
-    // Toujours garder une copie locale
     localStorage.setItem(
       "lexiprof_fallback",
       JSON.stringify(definitions)
@@ -156,8 +199,6 @@ async function saveRemote() {
       error
     );
 
-    // Même si JSONBin tombe, on garde les données
-    // localement pour éviter de les perdre.
     try {
 
       localStorage.setItem(
@@ -168,9 +209,10 @@ async function saveRemote() {
     } catch (localError) {
 
       console.error(
-        "❌ Impossible de créer la sauvegarde locale :",
+        "❌ Impossible de sauvegarder localement :",
         localError
       );
+
     }
 
     if (typeof showToast === "function") {
@@ -182,5 +224,7 @@ async function saveRemote() {
     }
 
     return false;
+
   }
+
 }
