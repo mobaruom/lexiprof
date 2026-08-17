@@ -308,14 +308,18 @@ function toggleCard(id, button) {
 
 function createQCMHTML(d) {
   if (!d.qcm) return "";
-  const answers = Array.isArray(d.qcm.answers) ? d.qcm.answers : [];
+  let answers = Array.isArray(d.qcm.answers) ? [...d.qcm.answers] : [];
   if (!answers.length) return "";
+
+  // Mélange les réponses
+  answers = answers.sort(() => Math.random() - 0.5);
+
   return `
     <div class="extra-block">
       <h4>❓ Mini QCM</h4>
       <p>${escapeHTML(d.qcm.question)}</p>
       <div class="qcm-container">
-        ${answers.map((a, i) => `
+        ${answers.map((a) => `
           <button class="qcm-btn" onclick="answerQCM(this, ${Boolean(a.correct)}, ${d.id})">
             ${escapeHTML(a.text)}
           </button>
@@ -325,6 +329,7 @@ function createQCMHTML(d) {
     </div>
   `;
 }
+
 
 function answerQCM(button, correct, id) {
   const card = button.closest(".extra-block");
