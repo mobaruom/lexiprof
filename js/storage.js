@@ -2,29 +2,33 @@
 // STOCKAGE — JSONBIN
 // ==================================================
 
-// --------------------------------------------------
-// CHARGEMENT DEPUIS JSONBIN
-// --------------------------------------------------
+async function load() {
 
-async function loadRemote() {
-
-  const controller = new AbortController();
-
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, 8000);
-
+  // Pas de loader : on charge directement les données
   try {
 
-    const response = await fetch(
-      BIN_URL + "/latest",
-      {
-        method: "GET",
-        headers: HEADERS_R,
-        signal: controller.signal,
-        cache: "no-store"
-      }
-    );
+    const controller = new AbortController();
+
+    // Timeout de sécurité : 8 secondes maximum
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 8000);
+
+    let response;
+
+    try {
+      response = await fetch(
+        BIN_URL + "/latest",
+        {
+          method: "GET",
+          headers: HEADERS_R,
+          signal: controller.signal,
+          cache: "no-store"
+        }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       throw new Error(`JSONBin HTTP ${response.status}`);
@@ -32,56 +36,61 @@ async function loadRemote() {
 
     const data = await response.json();
 
-    const record = data?.record ?? data;
-    const defs = record?.definitions;
+    // JSONBin peut renvoyer :
+    // { definitions: [...] }
+    // ou
+    // { record: { definitions: [...] } }
 
-    if (!Array.isArray(defs)) {
-      throw new Error(
-        "Format JSONBin invalide : definitions introuvable."
-      );
+    const record = data?.record ?? data;
+    const remoteDefs = record?.definitions;
+
+    if (!Array.isArray(remoteDefs)) {
+      throw new Error("Format JSONBin invalide.");
     }
 
+    // On accepte même un tableau vide :
+    // il représente alors réellement le contenu du BIN.
+    definitions = remoteDefs;
+
     // Sauvegarde locale de secours
-    localStorage.setItem(
-      "lexiprof_fallback",
-      JSON.stringify(defs)
-    );
+    try {
+      localStorage.setItem(
+        "lexiprof_fallback",
+        JSON.stringify(definitions)
+      );
+    } catch (e) {
+      console.warn("Impossible de sauvegarder le fallback local :", e);
+    }
 
     console.log(
-      `✅ JSONBin chargé : ${defs.length} définitions`
+      `✅ JSONBin chargé : ${definitions.length} définitions`
     );
-
-    return defs;
 
   } catch (error) {
 
     console.warn(
-      "⚠️ Impossible de charger JSONBin :",
+      "⚠️ JSONBin indisponible :",
       error
     );
 
-    // --------------------------------------------------
+    // ==================================================
     // FALLBACK LOCAL
-    // --------------------------------------------------
+    // ==================================================
+
+    let localDefinitions = null;
 
     try {
 
-      const local = localStorage.getItem(
+      const stored = localStorage.getItem(
         "lexiprof_fallback"
       );
 
-      if (local) {
+      if (stored) {
 
-        const defs = JSON.parse(local);
+        const parsed = JSON.parse(stored);
 
-        if (Array.isArray(defs)) {
-
-          console.log(
-            `✅ Définitions locales chargées : ${defs.length}`
-          );
-
-          return defs;
-
+        if (Array.isArray(parsed)) {
+          localDefinitions = parsed;
         }
 
       }
@@ -89,76 +98,64 @@ async function loadRemote() {
     } catch (localError) {
 
       console.warn(
-        "⚠️ Erreur avec les données locales :",
+        "⚠️ Fallback local corrompu, suppression.",
         localError
       );
 
+      // Très important :
+      // on supprime l'ancien fallback cassé
+      try {
+        localStorage.removeItem("lexiprof_fallback");
+      } catch (e) {}
     }
 
-    // --------------------------------------------------
-    // DERNIER RECOURS : DONNÉES PAR DÉFAUT
-    // --------------------------------------------------
+    // Si le fallback local fonctionne
+    if (Array.isArray(localDefinitions)) {
 
-    console.log(
-      "ℹ️ Utilisation des définitions par défaut."
-    );
+      definitions = localDefinitions;
 
-    return [...defaultData];
-
-  } finally {
-
-    clearTimeout(timeout);
-
-  }
-
-}
-
-
-// --------------------------------------------------
-// FONCTION DE CHARGEMENT PRINCIPALE
-// --------------------------------------------------
-// IMPORTANT : app.js appelle load()
-// --------------------------------------------------
-
-async function load() {
-
-  setLoading(true);
-
-  try {
-
-    const defs = await loadRemote();
-
-    if (Array.isArray(defs)) {
-
-      definitions = defs;
+      console.log(
+        `✅ Fallback local chargé : ${definitions.length} définitions`
+      );
 
     } else {
 
+      // ==================================================
+      // DERNIER RECOURS : DONNÉES PAR DÉFAUT
+      // ==================================================
+
       definitions = [...defaultData];
 
+      console.log(
+        `✅ Données par défaut chargées : ${definitions.length} définitions`
+      );
+
+      // On tente de créer un nouveau fallback propre
+      try {
+        localStorage.setItem(
+          "lexiprof_fallback",
+          JSON.stringify(definitions)
+        );
+      } catch (e) {
+        console.warn(
+          "⚠️ Impossible de créer le fallback local.",
+          e
+        );
+      }
     }
-
-  } catch (error) {
-
-    console.error(
-      "❌ Erreur globale de chargement :",
-      error
-    );
-
-    definitions = [...defaultData];
-
   }
 
-  setLoading(false);
+  // ==================================================
+  // AFFICHAGE
+  // ==================================================
 
   render();
-
 }
 
 
-// --------------------------------------------------
+// ==================================================
 // SAUVEGARDE SUR JSONBIN
-// --------------------------------------------------
+// ==================================================
 
 async function saveRemote() {
 
@@ -181,13 +178,24 @@ async function saveRemote() {
       );
     }
 
-    localStorage.setItem(
-      "lexiprof_fallback",
-      JSON.stringify(definitions)
-    );
+    // Sauvegarde locale de secours
+    try {
+
+      localStorage.setItem(
+        "lexiprof_fallback",
+        JSON.stringify(definitions)
+      );
+
+    } catch (localError) {
+
+      console.warn(
+        "⚠️ Impossible de sauvegarder localement :",
+        localError
+      );
+    }
 
     console.log(
-      "✅ Définitions sauvegardées sur JSONBin."
+      `✅ JSONBin sauvegardé : ${definitions.length} définitions`
     );
 
     return true;
@@ -199,6 +207,9 @@ async function saveRemote() {
       error
     );
 
+    // Même si JSONBin est indisponible,
+    // on conserve les données localement.
+
     try {
 
       localStorage.setItem(
@@ -209,10 +220,9 @@ async function saveRemote() {
     } catch (localError) {
 
       console.error(
-        "❌ Impossible de sauvegarder localement :",
+        "❌ Impossible de créer le fallback local :",
         localError
       );
-
     }
 
     if (typeof showToast === "function") {
@@ -224,7 +234,5 @@ async function saveRemote() {
     }
 
     return false;
-
   }
-
 }
