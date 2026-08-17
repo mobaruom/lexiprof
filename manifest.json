@@ -1,18 +1,27 @@
 {
-  "name": "LexiProf — Dictionnaire STMG",
-  "short_name": "LexiProf",
-  "description": "Dictionnaire STMG — Management, Droit, Économie et RH.",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f7f5f0",
-  "theme_color": "#1c1b19",
-  "orientation": "portrait-primary",
-  "icons": [
+  'name': 'LexiProf — Dictionnaire STMG',
+  'short_name': 'LexiProf',
+
+  'description': 'Dictionnaire STMG moderne avec Management, Droit, Économie et RH. Synchronisé en temps réel.',
+
+  'start_url': '/index.html',
+  'display': 'standalone',
+
+  'background_color': '#f7f5f0',
+  'theme_color': '#f7f5f0',
+  'orientation': 'portrait',
+
+  'icons': [
     {
-      "src": "icons/IMG_6870.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      'src': 'icons/IMG_6870.png',
+      'sizes': '512x512',
+      'type': 'image/png',
+      'purpose': 'any maskable'
     }
-  ]
+  ],
+
+  'categories': ['education', 'reference'],
+
+  'lang': 'fr',
+  'dir': 'ltr'
 }
