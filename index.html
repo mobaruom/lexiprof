@@ -3,970 +3,291 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <meta name="theme-color" content="#f7f5f0">
   <meta name="description" content="LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.">
-
   <link rel="manifest" href="manifest.json">
-
   <title>LexiProf — Dictionnaire STMG</title>
-
   <link rel="stylesheet" href="css/style.css">
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap"
-    rel="stylesheet"
-  >
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-<!-- =========================================================
-     HEADER
-========================================================= -->
+<!-- LOADER -->
+<div class="global-loader" id="globalLoader">
+  <div class="loader-logo">L</div>
+  <div class="loader-bar"><span></span></div>
+  <p>Chargement de LexiProf...</p>
+</div>
 
+<!-- HEADER -->
 <header>
   <div class="logo">
     <span class="logo-main">LexiProf</span>
     <span class="logo-tag">· STMG</span>
   </div>
-
   <div class="header-actions">
-
-    <button
-      class="btn-icon"
-      id="btnFlashcard"
-      title="Mode Flashcard"
-      aria-label="Mode Flashcard"
-    >
-      📚
-    </button>
-
-    <button
-      class="btn-icon"
-      id="themeToggle"
-      title="Mode sombre / clair"
-      aria-label="Changer de thème"
-    >
-      <span id="themeIcon">☾</span>
-    </button>
-
-    <button
-      class="btn-admin"
-      onclick="openAdmin()"
-    >
-      ⚙ <span class="btn-admin-text">Admin</span>
-    </button>
-
+    <button class="btn-icon" id="btnFlashcard" title="Mode Flashcard" aria-label="Mode Flashcard">📚</button>
+    <button class="btn-icon" id="themeToggle" title="Mode sombre / clair" aria-label="Changer de thème">🌙</button>
+    <button class="btn-admin" onclick="openAdmin()">⚙ <span class="btn-admin-text">Admin</span></button>
   </div>
 </header>
 
-
-<!-- =========================================================
-     CONTENU PRINCIPAL
-========================================================= -->
-
+<!-- MAIN -->
 <main>
-
   <!-- HERO -->
-
   <section class="hero">
-
     <h1>Dictionnaire STMG</h1>
-
-    <p>
-      Retrouve toutes les définitions de Management,
-      Droit, Économie et RH.
-    </p>
+    <p>Retrouve toutes les définitions de Management, Droit, Économie et RH.</p>
 
     <!-- RECHERCHE -->
-
     <div class="search-wrap">
-
-      <svg
-        class="search-icon"
-        width="17"
-        height="17"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-      >
+      <svg class="search-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <circle cx="11" cy="11" r="8"></circle>
         <path d="m21 21-4.35-4.35"></path>
       </svg>
-
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="Rechercher un terme…"
-        autocomplete="off"
-        oninput="onSearch()"
-      >
-
-      <button
-        class="search-clear"
-        id="searchClear"
-        onclick="clearSearch()"
-        aria-label="Effacer la recherche"
-      >
-        ×
-      </button>
-
+      <input type="text" id="searchInput" placeholder="Rechercher un terme..." autocomplete="off" oninput="onSearch()">
+      <button class="search-clear" id="searchClear" onclick="clearSearch()" aria-label="Effacer la recherche">×</button>
     </div>
 
     <!-- HISTORIQUE -->
-
-    <div
-      class="search-history"
-      id="searchHistory"
-    ></div>
+    <div class="search-history" id="searchHistory"></div>
 
     <!-- COMPTEUR -->
-
-    <div
-      class="definition-counter"
-      id="defCounter"
-    ></div>
-
+    <div class="definition-counter" id="defCounter"></div>
   </section>
 
-
-  <!-- =======================================================
-       FILTRES
-  ======================================================== -->
-
+  <!-- FILTRES -->
   <nav class="filters" aria-label="Filtres">
-
-    <button
-      class="filter-btn active"
-      style="--active-color:var(--text)"
-      onclick="setFilter('all',this)"
-    >
-      Tout
+    <button class="filter-btn active" style="--active-color:var(--text)" onclick="setFilter('all',this)">Tout</button>
+    <button class="filter-btn" style="--active-color:var(--mgt)" onclick="setFilter('Management',this)">
+      <span class="dot" style="background:var(--mgt)"></span>Management
     </button>
-
-    <button
-      class="filter-btn"
-      style="--active-color:var(--mgt)"
-      onclick="setFilter('Management',this)"
-    >
-      <span
-        class="dot"
-        style="background:var(--mgt)"
-      ></span>
-
-      Management
+    <button class="filter-btn" style="--active-color:var(--drt)" onclick="setFilter('Droit',this)">
+      <span class="dot" style="background:var(--drt)"></span>Droit
     </button>
-
-    <button
-      class="filter-btn"
-      style="--active-color:var(--drt)"
-      onclick="setFilter('Droit',this)"
-    >
-      <span
-        class="dot"
-        style="background:var(--drt)"
-      ></span>
-
-      Droit
+    <button class="filter-btn" style="--active-color:var(--eco)" onclick="setFilter('Économie',this)">
+      <span class="dot" style="background:var(--eco)"></span>Économie
     </button>
-
-    <button
-      class="filter-btn"
-      style="--active-color:var(--eco)"
-      onclick="setFilter('Économie',this)"
-    >
-      <span
-        class="dot"
-        style="background:var(--eco)"
-      ></span>
-
-      Économie
+    <button class="filter-btn" style="--active-color:var(--rh)" onclick="setFilter('RH',this)">
+      <span class="dot" style="background:var(--rh)"></span>RH
     </button>
-
-    <button
-      class="filter-btn"
-      style="--active-color:var(--rh)"
-      onclick="setFilter('RH',this)"
-    >
-      <span
-        class="dot"
-        style="background:var(--rh)"
-      ></span>
-
-      RH
+    <button class="filter-btn filter-fav" style="--active-color:var(--accent)" data-filter="favorites" onclick="setFilter('favorites',this)">
+      <span class="fav-star">★</span>Mes favoris
     </button>
-
-    <button
-      class="filter-btn filter-fav"
-      style="--active-color:var(--accent)"
-      onclick="setFilter('favorites',this)"
-    >
-      <span class="fav-star">★</span>
-
-      Mes favoris
-    </button>
-
   </nav>
 
+  <!-- INFORMATIONS -->
+  <div class="results-info" id="resultsInfo"></div>
 
-  <!-- =======================================================
-       INFORMATIONS
-  ======================================================== -->
-
-  <div
-    class="results-info"
-    id="resultsInfo"
-  ></div>
-
-
-  <!-- =======================================================
-       CARTES
-  ======================================================== -->
-
-  <section
-    class="cards"
-    id="cardsContainer"
-    aria-live="polite"
-  ></section>
-
+  <!-- CARTES -->
+  <section class="cards" id="cardsContainer" aria-live="polite"></section>
 </main>
 
-
-<!-- =========================================================
-     ACTIONS RAPIDES
-========================================================= -->
-
-<div
-  class="quick-actions"
-  id="quickActions"
->
-
-  <button
-    class="quick-action"
-    id="randomDefBtn"
-    title="Définition aléatoire"
-  >
-    🎲
-    <span>Aléatoire</span>
-  </button>
-
-  <button
-    class="quick-action"
-    id="scrollCardsBtn"
-    title="Voir les définitions"
-  >
-    📚
-    <span>Définitions</span>
-  </button>
-
+<!-- ACTIONS RAPIDES -->
+<div class="quick-actions" id="quickActions">
+  <button class="quick-action" id="randomDefBtn" title="Définition aléatoire">🎲<span>Aléatoire</span></button>
+  <button class="quick-action" id="scrollCardsBtn" title="Voir les définitions">📚<span>Définitions</span></button>
 </div>
 
+<!-- BOUTON RETOUR EN HAUT -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Remonter en haut" aria-label="Remonter en haut">↑</button>
 
-<!-- =========================================================
-     BOUTON RETOUR EN HAUT
-========================================================= -->
+<!-- BARRE DE PROGRESSION -->
+<div class="reading-progress" id="readingProgress"></div>
 
-<button
-  class="scroll-top"
-  id="scrollTop"
-  onclick="window.scrollTo({top:0,behavior:'smooth'})"
-  title="Remonter en haut"
-  aria-label="Remonter en haut"
->
-  ↑
-</button>
-
-
-<!-- =========================================================
-     BARRE DE PROGRESSION
-========================================================= -->
-
-<div
-  class="reading-progress"
-  id="readingProgress"
-></div>
-
-
-<!-- =========================================================
-     ADMIN OVERLAY
-========================================================= -->
-
-<div
-  class="overlay"
-  id="overlay"
-  onclick="handleOverlayClick(event)"
->
-
-  <div
-    class="admin-panel"
-    id="adminPanel"
-  >
-
-    <!-- ADMIN HEADER -->
-
+<!-- ADMIN OVERLAY -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="admin-panel" id="adminPanel">
     <div class="admin-header">
-
       <div>
         <h2>Interface Admin</h2>
-
-        <p class="admin-subtitle">
-          Gérer les définitions de LexiProf
-        </p>
+        <p class="admin-subtitle">Gérer les définitions de LexiProf</p>
       </div>
-
-      <button
-        class="btn-close"
-        onclick="closeAdmin()"
-        aria-label="Fermer"
-      >
-        ×
-      </button>
-
+      <button class="btn-close" onclick="closeAdmin()" aria-label="Fermer">×</button>
     </div>
 
-
     <div class="admin-body">
-
-
-      <!-- ===================================================
-           AJOUT / MODIFICATION
-      ==================================================== -->
-
+      <!-- AJOUT / MODIFICATION -->
       <section class="form-section">
-
-        <h3 id="formTitle">
-          Ajouter une définition
-        </h3>
-
+        <h3 id="formTitle">Ajouter une définition</h3>
 
         <div class="form-row">
-
-          <label for="formTerm">
-            Terme
-          </label>
-
-          <input
-            type="text"
-            id="formTerm"
-            placeholder="Ex : Leadership"
-          >
-
+          <label for="formTerm">Terme</label>
+          <input type="text" id="formTerm" placeholder="Ex : Leadership">
         </div>
 
-
         <div class="form-row">
-
-          <label for="formMatiere">
-            Matière
-          </label>
-
+          <label for="formMatiere">Matière</label>
           <select id="formMatiere">
-
-            <option value="Management">
-              Management
-            </option>
-
-            <option value="Droit">
-              Droit
-            </option>
-
-            <option value="Économie">
-              Économie
-            </option>
-
-            <option value="RH">
-              RH
-            </option>
-
+            <option value="Management">Management</option>
+            <option value="Droit">Droit</option>
+            <option value="Économie">Économie</option>
+            <option value="RH">RH</option>
           </select>
-
         </div>
-
 
         <div class="form-row">
-
-          <label for="formDef">
-            Définition
-          </label>
-
-          <textarea
-            id="formDef"
-            placeholder="Saisir la définition complète…"
-          ></textarea>
-
+          <label for="formDef">Définition</label>
+          <textarea id="formDef" placeholder="Saisir la définition complète..."></textarea>
         </div>
-
 
         <div class="form-row">
-
-          <label for="formExample">
-            Exemple concret
-            <span>(optionnel)</span>
-          </label>
-
-          <textarea
-            id="formExample"
-            placeholder="Un exemple pour illustrer la notion…"
-          ></textarea>
-
+          <label for="formExample">Exemple concret <span>(optionnel)</span></label>
+          <textarea id="formExample" placeholder="Un exemple pour illustrer la notion..."></textarea>
         </div>
-
 
         <div class="form-row">
-
-          <label for="formRemember">
-            À retenir
-            <span>(optionnel)</span>
-          </label>
-
-          <textarea
-            id="formRemember"
-            placeholder="Une phrase courte à retenir…"
-          ></textarea>
-
+          <label for="formRemember">À retenir <span>(optionnel)</span></label>
+          <textarea id="formRemember" placeholder="Une phrase courte à retenir..."></textarea>
         </div>
 
-
-        <button
-          class="btn-add"
-          id="btnFormAction"
-          onclick="handleFormAction()"
-        >
-          + Ajouter la définition
-        </button>
-
-
-        <button
-          class="btn-cancel-edit"
-          id="btnCancelEdit"
-          onclick="cancelEdit()"
-          style="display:none"
-        >
-          Annuler la modification
-        </button>
-
+        <button class="btn-add" id="btnFormAction" onclick="handleFormAction()">+ Ajouter la définition</button>
+        <button class="btn-cancel-edit" id="btnCancelEdit" onclick="cancelEdit()" style="display:none">Annuler la modification</button>
       </section>
 
-
-      <!-- ===================================================
-           IMPORT JSON
-      ==================================================== -->
-
+      <!-- IMPORT JSON -->
       <section class="form-section import-section">
-
-        <h3>
-          📥 Import massif
-        </h3>
-
-        <p class="section-description">
-          Ajoute plusieurs définitions en une seule fois.
-        </p>
-
-
-        <!-- FICHIER -->
+        <h3>📥 Import massif</h3>
+        <p class="section-description">Ajoute plusieurs définitions en une seule fois.</p>
 
         <div class="form-row">
-
-          <label for="jsonImport">
-            Importer un fichier JSON
-          </label>
-
-          <input
-            type="file"
-            id="jsonImport"
-            accept=".json,application/json"
-          >
-
+          <label for="jsonImport">Importer un fichier JSON</label>
+          <input type="file" id="jsonImport" accept=".json,application/json">
         </div>
 
-
-        <button
-          class="btn-add"
-          onclick="importJson()"
-        >
-          📥 Importer le fichier
-        </button>
-
-
-        <!-- COPIER / COLLER -->
+        <button class="btn-add" onclick="importJson()">📥 Importer le fichier</button>
 
         <div class="form-row json-paste-row">
-
-          <label for="jsonPaste">
-            Ou coller directement le JSON
-          </label>
-
-          <textarea
-            id="jsonPaste"
-            class="json-editor"
-            placeholder='[
+          <label for="jsonPaste">Ou coller directement le JSON</label>
+          <textarea id="jsonPaste" class="json-editor" placeholder='[
   {
     "term": "Leadership",
     "matiere": "Management",
     "def": "Définition..."
   }
-]'
-          ></textarea>
-
+]'></textarea>
         </div>
 
-
-        <button
-          class="btn-add"
-          onclick="handleJSONImport()"
-        >
-          📋 Importer le JSON collé
-        </button>
-
-
-        <button
-          class="btn-secondary"
-          onclick="exportJson()"
-        >
-          📤 Exporter toutes les définitions
-        </button>
-
+        <button class="btn-add" onclick="handleJSONImport()">📋 Importer le JSON collé</button>
+        <button class="btn-secondary" onclick="exportJson()">📤 Exporter toutes les définitions</button>
       </section>
 
-
-      <!-- ===================================================
-           LISTE ADMIN
-      ==================================================== -->
-
+      <!-- LISTE ADMIN -->
       <section class="admin-definitions">
-
         <div class="admin-list-heading">
-
           <div>
-
-            <h3>
-              Définitions enregistrées
-            </h3>
-
-            <p>
-              <span id="adminCount">0</span>
-              définition(s)
-            </p>
-
+            <h3>Définitions enregistrées</h3>
+            <p><span id="adminCount">0</span> définition(s)</p>
           </div>
-
         </div>
-
-
-        <div
-          id="adminList"
-          class="admin-list"
-        ></div>
-
+        <div id="adminList" class="admin-list"></div>
       </section>
 
-
-      <!-- ===================================================
-           MOT DE PASSE
-      ==================================================== -->
-
+      <!-- MOT DE PASSE -->
       <section class="change-pwd-section">
-
-        <button
-          class="change-pwd-toggle"
-          onclick="toggleChangePwd()"
-        >
-          🔑 Changer le mot de passe admin
-        </button>
-
-
-        <div
-          class="change-pwd-form"
-          id="changePwdForm"
-        >
-
+        <button class="change-pwd-toggle" onclick="toggleChangePwd()">🔑 Changer le mot de passe admin</button>
+        <div class="change-pwd-form" id="changePwdForm">
           <div class="form-row">
-
-            <label for="newPwd1">
-              Nouveau mot de passe
-            </label>
-
-            <input
-              type="password"
-              id="newPwd1"
-              placeholder="Nouveau mot de passe"
-            >
-
+            <label for="newPwd1">Nouveau mot de passe</label>
+            <input type="password" id="newPwd1" placeholder="Nouveau mot de passe">
           </div>
-
-
           <div class="form-row">
-
-            <label for="newPwd2">
-              Confirmation
-            </label>
-
-            <input
-              type="password"
-              id="newPwd2"
-              placeholder="Répéter le mot de passe"
-            >
-
+            <label for="newPwd2">Confirmation</label>
+            <input type="password" id="newPwd2" placeholder="Répéter le mot de passe">
           </div>
-
-
-          <button
-            class="btn-add"
-            onclick="changePassword()"
-          >
-            Enregistrer
-          </button>
-
+          <button class="btn-add" onclick="changePassword()">Enregistrer</button>
         </div>
-
       </section>
-
     </div>
-
   </div>
-
 </div>
 
-
-<!-- =========================================================
-     MOT DE PASSE ADMIN
-========================================================= -->
-
-<div
-  class="overlay"
-  id="pwdOverlay"
->
-
+<!-- MOT DE PASSE ADMIN -->
+<div class="overlay" id="pwdOverlay">
   <div class="pwd-modal">
-
-    <div class="lock-icon">
-      🔒
-    </div>
-
-    <h2>
-      Accès Admin
-    </h2>
-
-    <p>
-      Entrez le mot de passe pour continuer.
-    </p>
-
-
-    <input
-      type="password"
-      id="pwdInput"
-      placeholder="••••••••"
-      autocomplete="current-password"
-      onkeydown="if(event.key==='Enter') checkPassword()"
-    >
-
-
-    <div
-      class="pwd-error"
-      id="pwdError"
-    ></div>
-
-
-    <button
-      class="btn-unlock"
-      onclick="checkPassword()"
-    >
-      Déverrouiller
-    </button>
-
-
-    <button
-      class="pwd-cancel"
-      onclick="closePwdModal()"
-    >
-      Annuler
-    </button>
-
+    <div class="lock-icon">🔒</div>
+    <h2>Accès Admin</h2>
+    <p>Entrez le mot de passe pour continuer.</p>
+    <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') checkPassword()">
+    <div class="pwd-error" id="pwdError"></div>
+    <button class="btn-unlock" onclick="checkPassword()">Déverrouiller</button>
+    <button class="pwd-cancel" onclick="closePwdModal()">Annuler</button>
   </div>
-
 </div>
 
-
-<!-- =========================================================
-     FLASHCARDS
-========================================================= -->
-
-<div
-  class="overlay"
-  id="flashcardOverlay"
-  onclick="closeFlashcard(event)"
->
-
-  <div
-    class="flashcard-modal"
-    onclick="event.stopPropagation()"
-  >
-
+<!-- FLASHCARDS -->
+<div class="overlay" id="flashcardOverlay" onclick="closeFlashcard(event)">
+  <div class="flashcard-modal" onclick="event.stopPropagation()">
     <div class="flashcard-header">
-
-      <span
-        class="flashcard-counter"
-        id="flashcardCounter"
-      >
-        1 / 1
-      </span>
-
-      <button
-        class="btn-close"
-        onclick="closeFlashcard()"
-      >
-        ×
-      </button>
-
+      <span class="flashcard-counter" id="flashcardCounter">1 / 1</span>
+      <button class="btn-close" onclick="closeFlashcard()">×</button>
     </div>
-
-
-    <div
-      class="flashcard-body"
-      id="flashcardBody"
-      onclick="revealFlashcard()"
-    >
-
-      <div
-        class="flashcard-matiere"
-        id="flashcardMeta"
-      >
-        Management
-      </div>
-
-      <div
-        class="flashcard-term"
-        id="flashcardTerm"
-      >
-        Terme
-      </div>
-
-      <div
-        class="flashcard-reveal"
-        id="flashcardReveal"
-      >
-        Cliquez pour révéler
-      </div>
-
-      <div
-        class="flashcard-def"
-        id="flashcardDef"
-        style="display:none"
-      >
-        Définition
-      </div>
-
+    <div class="flashcard-body" id="flashcardBody" onclick="revealFlashcard()">
+      <div class="flashcard-matiere" id="flashcardMeta">Management</div>
+      <div class="flashcard-term" id="flashcardTerm">Terme</div>
+      <div class="flashcard-reveal" id="flashcardReveal">Cliquez pour révéler</div>
+      <div class="flashcard-def" id="flashcardDef" style="display:none">Définition</div>
     </div>
-
-
     <div class="flashcard-actions">
-
-      <button
-        class="flashcard-btn"
-        onclick="prevFlashcard()"
-      >
-        ← Précédent
-      </button>
-
-      <button
-        class="flashcard-btn primary"
-        onclick="nextFlashcard()"
-      >
-        Suivant →
-      </button>
-
+      <button class="flashcard-btn" onclick="prevFlashcard()">← Précédent</button>
+      <button class="flashcard-btn primary" onclick="nextFlashcard()">Suivant →</button>
     </div>
-
   </div>
-
 </div>
 
-
-<!-- =========================================================
-     DÉFINITION ALÉATOIRE
-========================================================= -->
-
-<div
-  class="random-modal"
-  id="randomModal"
->
-
+<!-- DÉFINITION ALÉATOIRE -->
+<div class="random-modal" id="randomModal">
   <div class="random-modal-card">
-
-    <button
-      class="random-close"
-      onclick="closeRandomModal()"
-      aria-label="Fermer"
-    >
-      ×
-    </button>
-
-
-    <span class="random-label">
-      🎲 DÉFINITION ALÉATOIRE
-    </span>
-
-
-    <div
-      class="random-matiere"
-      id="randomMatiere"
-    ></div>
-
-
-    <h2
-      id="randomTerm"
-    ></h2>
-
-
-    <p
-      id="randomDef"
-    ></p>
-
-
+    <button class="random-close" onclick="closeRandomModal()" aria-label="Fermer">×</button>
+    <span class="random-label">🎲 DÉFINITION ALÉATOIRE</span>
+    <div class="random-matiere" id="randomMatiere"></div>
+    <h2 id="randomTerm"></h2>
+    <p id="randomDef"></p>
     <div class="random-actions">
-
-      <button
-        onclick="openRandomDefinition()"
-      >
-        📖 Ouvrir la fiche
-      </button>
-
-      <button
-        class="secondary"
-        onclick="showRandomDefinition()"
-      >
-        🎲 Une autre
-      </button>
-
+      <button onclick="openRandomDefinition()">📖 Ouvrir la fiche</button>
+      <button class="secondary" onclick="showRandomDefinition()">🎲 Une autre</button>
     </div>
-
   </div>
-
 </div>
 
-
-<!-- =========================================================
-     MESSAGE BIENVENUE
-========================================================= -->
-
-<div
-  class="welcome-banner"
-  id="welcomeBanner"
->
-
-  <div class="welcome-icon">
-    📚
-  </div>
-
+<!-- MESSAGE BIENVENUE -->
+<div class="welcome-banner" id="welcomeBanner">
+  <div class="welcome-icon">📚</div>
   <div class="welcome-content">
-
-    <strong>
-      Bienvenue sur LexiProf
-    </strong>
-
-    <span>
-      Ton dictionnaire STMG pour réviser plus efficacement.
-    </span>
-
+    <strong>Bienvenue sur LexiProf</strong>
+    <span>Ton dictionnaire STMG pour réviser plus efficacement.</span>
   </div>
-
-  <button
-    onclick="closeWelcome()"
-    aria-label="Fermer"
-  >
-    ×
-  </button>
-
+  <button onclick="closeWelcome()" aria-label="Fermer">×</button>
 </div>
 
-
-<!-- =========================================================
-     INSTALLATION
-========================================================= -->
-
-<button
-  class="install-app-btn"
-  id="installAppBtn"
-  type="button"
->
-
-  <span>
-    📱
-  </span>
-
-  <span>
-    Installer LexiProf
-  </span>
-
+<!-- INSTALLATION -->
+<button class="install-app-btn" id="installAppBtn" type="button">
+  <span>📱</span>
+  <span>Installer LexiProf</span>
 </button>
 
-
-<!-- =========================================================
-     RACCOURCIS
-========================================================= -->
-
-<div
-  class="keyboard-hint"
-  id="keyboardHint"
->
-
-  <kbd>/</kbd>
-  rechercher
-
-  <kbd>R</kbd>
-  aléatoire
-
-  <kbd>Esc</kbd>
-  fermer
-
+<!-- RACCOURCIS -->
+<div class="keyboard-hint" id="keyboardHint">
+  <kbd>/</kbd> rechercher
+  <kbd>R</kbd> aléatoire
+  <kbd>Esc</kbd> fermer
 </div>
 
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-
-<!-- =========================================================
-     TOAST
-========================================================= -->
-
-<div
-  class="toast"
-  id="toast"
-  role="status"
-  aria-live="polite"
-></div>
-
-
-<!-- =========================================================
-     FOOTER
-========================================================= -->
-
+<!-- FOOTER -->
 <footer>
-
-  <strong>
-    LexiProf
-  </strong>
-
-  <span>
-    · Dictionnaire STMG
-  </span>
-
+  <strong>LexiProf</strong>
+  <span>· Dictionnaire STMG</span>
   <br>
-
-  <small>
-    Synchronisé via JSONBin
-  </small>
-
+  <small>Synchronisé via JSONBin</small>
 </footer>
 
-
-<!-- =========================================================
-     SCRIPTS
-========================================================= -->
-
-<script src="js/config.js?v=4"></script>
-<script src="js/storage.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<!-- SCRIPTS -->
+<script src="js/config.js?v=5"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 
 </body>
 </html>
