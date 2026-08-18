@@ -989,3 +989,4 @@ document.addEventListener("DOMContentLoaded", () => {
    FIN
    ============================================================ */
 console.log("📚 LexiProf — app.js v6.1 charge");
+
