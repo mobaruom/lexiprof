@@ -5,11 +5,11 @@
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <meta name='theme-color' content='#f7f5f0'>
-  <meta name='description' content='LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
+  <meta name='description' content='LexiProf v7 — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
 
   <link rel='manifest' href='manifest.json'>
   <title>LexiProf — Dictionnaire STMG</title>
-  <link rel='stylesheet' href='css/style.css'>
+  <link rel='stylesheet' href='css/style.css?v=7'>
 
   <link
     href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
@@ -25,6 +25,16 @@
     <p>Chargement de LexiProf...</p>
   </div>
 
+  <!-- KONAMI RETRO OVERLAY -->
+  <div class='retro-overlay' id='retroOverlay'>
+    <div class='retro-scanlines'></div>
+    <div class='retro-content'>
+      <div class='retro-title'>LEXI PROF</div>
+      <div class='retro-subtitle'>MODE RETRO ACTIVÉ</div>
+      <div class='retro-press'>Appuyez sur ESC pour quitter</div>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header>
     <div class='logo'>
@@ -33,6 +43,13 @@
     </div>
 
     <div class='header-actions'>
+      <button
+        class='btn-icon'
+        id='btnFocusMode'
+        title='Mode Focus'
+        aria-label='Mode Focus'
+      >🎯</button>
+
       <button
         class='btn-icon'
         id='btnFlashcard'
@@ -55,9 +72,9 @@
 
   <!-- MAIN -->
   <main>
-    <!-- HERO + SEARCH STICKY -->
+    <!-- HERO ANIMÉ -->
     <section class='hero'>
-      <h1>Dictionnaire STMG</h1>
+      <h1 id='heroTitle'></h1>
       <p>Retrouve toutes les définitions de Management, Droit, Économie et RH</p>
 
       <div class='search-wrap'>
@@ -94,68 +111,64 @@
       <div class='definition-counter' id='defCounter'></div>
     </section>
 
-    <!-- FILTRES -->
-    <nav class='filters' aria-label='Filtres'>
-      <button
-        class='filter-btn active'
-        style='--active-color:var(--text)'
-        onclick='setFilter(``all``,this)'
-      >Tout</button>
-
-      <button
-        class='filter-btn'
-        style='--active-color:var(--mgt)'
-        onclick='setFilter(``Management``,this)'
-      >
-        <span class='dot' style='background:var(--mgt)'></span>Management
-      </button>
-
-      <button
-        class='filter-btn'
-        style='--active-color:var(--drt)'
-        onclick='setFilter(``Droit``,this)'
-      >
-        <span class='dot' style='background:var(--drt)'></span>Droit
-      </button>
-
-      <button
-        class='filter-btn'
-        style='--active-color:var(--eco)'
-        onclick='setFilter(``Économie``,this)'
-      >
-        <span class='dot' style='background:var(--eco)'></span>Économie
-      </button>
-
-      <button
-        class='filter-btn'
-        style='--active-color:var(--rh)'
-        onclick='setFilter(``RH``,this)'
-      >
-        <span class='dot' style='background:var(--rh)'></span>RH
-      </button>
-
-      <button
-        class='filter-btn filter-fav'
-        style='--active-color:var(--accent)'
-        data-filter='favorites'
-        onclick='setFilter(``favorites``,this)'
-      >
-        <span class='fav-star'>★</span>Mes favoris
-      </button>
+    <!-- FILTRES DROPDOWN -->
+    <nav class='filters-dropdown' aria-label='Filtres'>
+      <div class='filter-dropdown-wrap'>
+        <button class='filter-dropdown-btn' id='filterDropdownBtn' onclick='toggleFilterDropdown()'>
+          <span class='filter-dropdown-dot' id='filterDropdownDot'></span>
+          <span id='filterDropdownLabel'>Toutes les matières</span>
+          <svg class='filter-dropdown-arrow' width='12' height='12' viewBox='0 0 12 12' fill='none'>
+            <path d='M2.5 4.5L6 8L9.5 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/>
+          </svg>
+        </button>
+        <div class='filter-dropdown-menu' id='filterDropdownMenu'>
+          <button class='filter-dropdown-item active' data-filter='all' onclick='setFilterFromDropdown("all", this)'>
+            <span class='filter-dot' style='background:var(--text)'></span>Toutes les matières
+          </button>
+          <button class='filter-dropdown-item' data-filter='Management' onclick='setFilterFromDropdown("Management", this)'>
+            <span class='filter-dot' style='background:var(--mgt)'></span>Management
+          </button>
+          <button class='filter-dropdown-item' data-filter='Droit' onclick='setFilterFromDropdown("Droit", this)'>
+            <span class='filter-dot' style='background:var(--drt)'></span>Droit
+          </button>
+          <button class='filter-dropdown-item' data-filter='Économie' onclick='setFilterFromDropdown("Économie", this)'>
+            <span class='filter-dot' style='background:var(--eco)'></span>Économie
+          </button>
+          <button class='filter-dropdown-item' data-filter='RH' onclick='setFilterFromDropdown("RH", this)'>
+            <span class='filter-dot' style='background:var(--rh)'></span>RH
+          </button>
+          <div class='filter-dropdown-divider'></div>
+          <button class='filter-dropdown-item filter-dropdown-fav' data-filter='favorites' onclick='setFilterFromDropdown("favorites", this)'>
+            <span class='filter-fav-star'>★</span>Mes favoris
+          </button>
+        </div>
+      </div>
     </nav>
 
     <!-- RESULTS -->
     <div class='results-info' id='resultsInfo'></div>
 
+    <!-- SKELETON LOADING -->
+    <div class='skeleton-container' id='skeletonContainer' style='display:none'>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+    </div>
+
     <!-- CARTES -->
     <section class='cards' id='cardsContainer' aria-live='polite'></section>
+
+    <!-- SENTINELLE SCROLL INFINI -->
+    <div class='scroll-sentinel' id='scrollSentinel'></div>
   </main>
 
   <!-- SCROLL TOP -->
   <button
     class='scroll-top'
     id='scrollTop'
-    onclick='window.scrollTo({top:0,behavior:``smooth``})'
+    onclick='window.scrollTo({top:0,behavior:"smooth"})'
     title='Remonter en haut'
     aria-label='Remonter en haut'
   >↑</button>
@@ -230,7 +243,7 @@
             <textarea
               id='jsonPaste'
               class='json-editor'
-              placeholder='[ { ``term``: ``Leadership``, ``matiere``: ``Management``, ``def``: ``Définition...`` } ]'
+              placeholder='[ { "term": "Leadership", "matiere": "Management", "def": "Définition..." } ]'
             ></textarea>
           </div>
 
@@ -284,7 +297,7 @@
         id='pwdInput'
         placeholder='••••••••'
         autocomplete='current-password'
-        onkeydown='if(event.key===`Enter`) checkPassword()'
+        onkeydown='if(event.key==="Enter") checkPassword()'
       >
 
       <div class='pwd-error' id='pwdError'></div>
@@ -368,12 +381,13 @@
     <span>· Dictionnaire STMG</span>
     <br>
     <small>Synchronisé via JSONBin</small>
+    <small>cree et développé par mbelka23 </small>
   </footer>
 
   <!-- SCRIPTS -->
-  <script src='js/config.js?v=6'></script>
-  <script src='js/storage.js?v=6'></script>
-  <script src='js/app.js?v=6'></script>
+  <script src='js/config.js?v=7'></script>
+  <script src='js/storage.js?v=7'></script>
+  <script src='js/app.js?v=7'></script>
 </body>
 
 </html>
