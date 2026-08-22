@@ -5,11 +5,11 @@
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <meta name='theme-color' content='#f7f5f0'>
-  <meta name='description' content='LexiProf v7 — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
+  <meta name='description' content='LexiProf v8 — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
 
   <link rel='manifest' href='manifest.json'>
   <title>LexiProf — Dictionnaire STMG</title>
-  <link rel='stylesheet' href='css/style.css?v=7'>
+  <link rel='stylesheet' href='css/style.css?v=8'>
 
   <link
     href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
@@ -25,16 +25,6 @@
     <p>Chargement de LexiProf...</p>
   </div>
 
-  <!-- KONAMI RETRO OVERLAY -->
-  <div class='retro-overlay' id='retroOverlay'>
-    <div class='retro-scanlines'></div>
-    <div class='retro-content'>
-      <div class='retro-title'>LEXI PROF</div>
-      <div class='retro-subtitle'>MODE RETRO ACTIVÉ</div>
-      <div class='retro-press'>Appuyez sur ESC pour quitter</div>
-    </div>
-  </div>
-
   <!-- HEADER -->
   <header>
     <div class='logo'>
@@ -43,26 +33,20 @@
     </div>
 
     <div class='header-actions'>
-      <button
-        class='btn-icon'
-        id='btnFocusMode'
-        title='Mode Focus'
-        aria-label='Mode Focus'
-      >🎯</button>
+      <div class='user-display' id='userDisplay' style='display:none'>
+        <span class='user-name'></span>
+        <button class='btn-icon' onclick='handleLogout()' title='Déconnexion'>🚪</button>
+      </div>
 
-      <button
-        class='btn-icon'
-        id='btnFlashcard'
-        title='Mode Flashcard'
-        aria-label='Mode Flashcard'
-      >📚</button>
+      <button class='btn-icon' id='authBtn' onclick='openAuthModal()' title='Connexion'>
+        👤
+      </button>
 
-      <button
-        class='btn-icon'
-        id='themeToggle'
-        title='Mode sombre / clair'
-        aria-label='Changer de thème'
-      >🌙</button>
+      <button class='btn-icon' id='btnFocusMode' title='Mode Focus' aria-label='Mode Focus'>🎯</button>
+
+      <button class='btn-icon' id='btnFlashcard' title='Mode Flashcard' aria-label='Mode Flashcard'>📚</button>
+
+      <button class='btn-icon' id='themeToggle' title='Mode sombre / clair' aria-label='Changer de thème'>🌙</button>
 
       <button class='btn-admin' onclick='openAdmin()'>
         ⚙ <span class='btn-admin-text'>Admin</span>
@@ -78,33 +62,14 @@
       <p>Retrouve toutes les définitions de Management, Droit, Économie et RH</p>
 
       <div class='search-wrap'>
-        <svg
-          class='search-icon'
-          width='17'
-          height='17'
-          fill='none'
-          stroke='currentColor'
-          stroke-width='2'
-          viewBox='0 0 24 24'
-        >
+        <svg class='search-icon' width='17' height='17' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'>
           <circle cx='11' cy='11' r='8'/>
           <path d='m21 21-4.35-4.35'/>
         </svg>
 
-        <input
-          type='text'
-          id='searchInput'
-          placeholder='Rechercher un terme...'
-          autocomplete='off'
-          oninput='onSearch()'
-        >
+        <input type='text' id='searchInput' placeholder='Rechercher un terme...' autocomplete='off' oninput='onSearch()'>
 
-        <button
-          class='search-clear'
-          id='searchClear'
-          onclick='clearSearch()'
-          aria-label='Effacer'
-        >×</button>
+        <button class='search-clear' id='searchClear' onclick='clearSearch()' aria-label='Effacer'>×</button>
       </div>
 
       <div class='search-history' id='searchHistory'></div>
@@ -165,16 +130,52 @@
   </main>
 
   <!-- SCROLL TOP -->
-  <button
-    class='scroll-top'
-    id='scrollTop'
-    onclick='window.scrollTo({top:0,behavior:"smooth"})'
-    title='Remonter en haut'
-    aria-label='Remonter en haut'
-  >↑</button>
+  <button class='scroll-top' id='scrollTop' onclick='window.scrollTo({top:0,behavior:"smooth"})' title='Remonter en haut' aria-label='Remonter en haut'>↑</button>
 
   <!-- BARRE DE PROGRESSION -->
   <div class='reading-progress' id='readingProgress'></div>
+
+  <!-- AUTH MODAL -->
+  <div class='overlay' id='authOverlay' onclick='if(event.target===this)closeAuthModal()'>
+    <div class='auth-modal'>
+      <div class='auth-header'>
+        <h2>LexiProf</h2>
+        <button class='btn-close' onclick='closeAuthModal()' aria-label='Fermer'>×</button>
+      </div>
+      <div class='auth-tabs'>
+        <button class='auth-tab active' id='authTabLogin' onclick='switchAuthTab("login")'>Connexion</button>
+        <button class='auth-tab' id='authTabRegister' onclick='switchAuthTab("register")'>Inscription</button>
+      </div>
+      <div class='auth-body'>
+        <div class='auth-form active' id='loginForm'>
+          <div class='form-row'>
+            <label for='authEmail'>Email</label>
+            <input type='email' id='authEmail' placeholder='ton@email.fr'>
+          </div>
+          <div class='form-row'>
+            <label for='authPassword'>Mot de passe</label>
+            <input type='password' id='authPassword' placeholder='••••••••'>
+          </div>
+          <button class='btn-add' onclick='handleLogin()'>Se connecter</button>
+        </div>
+        <div class='auth-form' id='registerForm'>
+          <div class='form-row'>
+            <label for='authDisplayName'>Nom d'affichage</label>
+            <input type='text' id='authDisplayName' placeholder='Ton prénom'>
+          </div>
+          <div class='form-row'>
+            <label for='authEmail'>Email</label>
+            <input type='email' id='authEmail' placeholder='ton@email.fr'>
+          </div>
+          <div class='form-row'>
+            <label for='authPassword'>Mot de passe</label>
+            <input type='password' id='authPassword' placeholder='••••••••'>
+          </div>
+          <button class='btn-add' onclick='handleRegister()'>Créer un compte</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ADMIN OVERLAY -->
   <div class='overlay' id='overlay' onclick='handleOverlayClick(event)'>
@@ -184,20 +185,16 @@
           <h2>Interface Admin</h2>
           <p class='admin-subtitle'>Gérer les définitions de LexiProf</p>
         </div>
-
         <button class='btn-close' onclick='closeAdmin()' aria-label='Fermer'>×</button>
       </div>
 
       <div class='admin-body'>
-        <!-- AJOUT / MODIF -->
         <section class='form-section'>
           <h3 id='formTitle'>Ajouter une définition</h3>
-
           <div class='form-row'>
             <label for='formTerm'>Terme</label>
             <input type='text' id='formTerm' placeholder='Ex : Leadership'>
           </div>
-
           <div class='form-row'>
             <label for='formMatiere'>Matière</label>
             <select id='formMatiere'>
@@ -207,51 +204,37 @@
               <option value='RH'>RH</option>
             </select>
           </div>
-
           <div class='form-row'>
             <label for='formDef'>Définition</label>
             <textarea id='formDef' placeholder='Saisir la définition complète...'></textarea>
           </div>
-
           <div class='form-row'>
             <label for='formExample'>Exemple concret <span>(optionnel)</span></label>
             <textarea id='formExample' placeholder='Un exemple pour illustrer...'></textarea>
           </div>
-
           <div class='form-row'>
             <label for='formRemember'>À retenir <span>(optionnel)</span></label>
             <textarea id='formRemember' placeholder='Une phrase courte à retenir...'></textarea>
           </div>
-
           <button class='btn-add' id='btnFormAction' onclick='handleFormAction()'>+ Ajouter la définition</button>
           <button class='btn-cancel-edit' id='btnCancelEdit' onclick='cancelEdit()' style='display:none'>Annuler la modification</button>
         </section>
 
-        <!-- IMPORT JSON -->
         <section class='form-section import-section'>
           <h3>📥 Import massif</h3>
-
           <div class='form-row'>
             <label for='jsonImport'>Importer un fichier JSON</label>
             <input type='file' id='jsonImport' accept='.json,application/json'>
           </div>
-
           <button class='btn-add' onclick='importJson()'>📥 Importer le fichier</button>
-
           <div class='form-row json-paste-row'>
             <label for='jsonPaste'>Ou coller directement le JSON</label>
-            <textarea
-              id='jsonPaste'
-              class='json-editor'
-              placeholder='[ { "term": "Leadership", "matiere": "Management", "def": "Définition..." } ]'
-            ></textarea>
+            <textarea id='jsonPaste' class='json-editor' placeholder='[ { "term": "Leadership", "matiere": "Management", "def": "Définition..." } ]'></textarea>
           </div>
-
           <button class='btn-add' onclick='handleJSONImport()'>📋 Importer le JSON collé</button>
           <button class='btn-secondary' onclick='exportJson()'>📤 Exporter toutes les définitions</button>
         </section>
 
-        <!-- LISTE ADMIN -->
         <section class='admin-definitions'>
           <div class='admin-list-heading'>
             <div>
@@ -259,25 +242,20 @@
               <p><span id='adminCount'>0</span> définition(s)</p>
             </div>
           </div>
-
           <div id='adminList' class='admin-list'></div>
         </section>
 
-        <!-- MOT DE PASSE -->
         <section class='change-pwd-section'>
           <button class='change-pwd-toggle' onclick='toggleChangePwd()'>🔑 Changer le mot de passe admin</button>
-
           <div class='change-pwd-form' id='changePwdForm'>
             <div class='form-row' style='margin-top:12px'>
               <label for='newPwd1'>Nouveau mot de passe</label>
               <input type='password' id='newPwd1' placeholder='Nouveau mot de passe'>
             </div>
-
             <div class='form-row'>
               <label for='newPwd2'>Confirmation</label>
               <input type='password' id='newPwd2' placeholder='Répéter le mot de passe'>
             </div>
-
             <button class='btn-add' onclick='changePassword()' style='background:var(--rh)'>Enregistrer</button>
           </div>
         </section>
@@ -291,17 +269,8 @@
       <div class='lock-icon'>🔒</div>
       <h2>Accès Admin</h2>
       <p>Entrez le mot de passe pour accéder à l'interface.</p>
-
-      <input
-        type='password'
-        id='pwdInput'
-        placeholder='••••••••'
-        autocomplete='current-password'
-        onkeydown='if(event.key==="Enter") checkPassword()'
-      >
-
+      <input type='password' id='pwdInput' placeholder='••••••••' autocomplete='current-password' onkeydown='if(event.key==="Enter") checkPassword()'>
       <div class='pwd-error' id='pwdError'></div>
-
       <button class='btn-unlock' onclick='checkPassword()'>Déverrouiller</button>
       <button class='pwd-cancel' onclick='closePwdModal()'>Annuler</button>
     </div>
@@ -314,14 +283,12 @@
         <span class='flashcard-counter' id='flashcardCounter'>1 / 1</span>
         <button class='btn-close' onclick='closeFlashcard()'>×</button>
       </div>
-
       <div class='flashcard-body' id='flashcardBody' onclick='revealFlashcard()'>
         <div class='flashcard-matiere' id='flashcardMeta'>Management</div>
         <div class='flashcard-term' id='flashcardTerm'>Terme</div>
         <div class='flashcard-reveal' id='flashcardReveal'>Cliquez pour révéler</div>
         <div class='flashcard-def' id='flashcardDef' style='display:none'>Définition</div>
       </div>
-
       <div class='flashcard-actions'>
         <button class='flashcard-btn' onclick='prevFlashcard()'>← Précédent</button>
         <button class='flashcard-btn primary' onclick='nextFlashcard()'>Suivant →</button>
@@ -333,13 +300,10 @@
   <div class='random-modal' id='randomModal'>
     <div class='random-modal-card'>
       <button class='random-close' onclick='closeRandomModal()' aria-label='Fermer'>×</button>
-
       <span class='random-label'>🎲 DÉFINITION ALÉATOIRE</span>
       <div class='random-matiere' id='randomMatiere'></div>
-
       <h2 id='randomTerm'></h2>
       <p id='randomDef'></p>
-
       <div class='random-actions'>
         <button onclick='openRandomDefinition()'>📖 Ouvrir la fiche</button>
         <button class='secondary' onclick='showRandomDefinition()'>🎲 Une autre</button>
@@ -350,12 +314,10 @@
   <!-- MESSAGE BIENVENUE -->
   <div class='welcome-banner' id='welcomeBanner'>
     <div class='welcome-icon'>📚</div>
-
     <div class='welcome-content'>
       <strong>Bienvenue sur LexiProf</strong>
       <span>Ton dictionnaire STMG pour réviser plus efficacement.</span>
     </div>
-
     <button onclick='closeWelcome()' aria-label='Fermer'>×</button>
   </div>
 
@@ -380,14 +342,13 @@
     <strong>LexiProf</strong>
     <span>· Dictionnaire STMG</span>
     <br>
-    <small>Synchronisé via JSONBin</small>
-    <small>cree et développé par mbelka23 </small>
+    <small>Sécurisé via Cloudflare Workers</small>
   </footer>
 
   <!-- SCRIPTS -->
-  <script src='js/config.js?v=7'></script>
-  <script src='js/storage.js?v=7'></script>
-  <script src='js/app.js?v=7'></script>
+  <script src='js/config.js?v=8'></script>
+  <script src='js/storage.js?v=8'></script>
+  <script src='js/app.js?v=8'></script>
 </body>
 
 </html>
