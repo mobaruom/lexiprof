@@ -5,11 +5,11 @@
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <meta name='theme-color' content='#f7f5f0'>
-  <meta name='description' content='LexiProf v8 — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
+  <meta name='description' content='LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
 
   <link rel='manifest' href='manifest.json'>
   <title>LexiProf — Dictionnaire STMG</title>
-  <link rel='stylesheet' href='css/style.css?v=8'>
+  <link rel='stylesheet' href='css/style.css?v=9'>
 
   <link
     href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
@@ -33,109 +33,81 @@
     </div>
 
     <div class='header-actions'>
-      <div class='user-display' id='userDisplay' style='display:none'>
-        <span class='user-name'></span>
-        <button class='btn-icon' onclick='handleLogout()' title='Déconnexion'>🚪</button>
-      </div>
-
-      <button class='btn-icon' id='authBtn' onclick='openAuthModal()' title='Connexion'>
-        👤
-      </button>
-
-      <button class='btn-icon' id='btnFocusMode' title='Mode Focus' aria-label='Mode Focus'>🎯</button>
-
-      <button class='btn-icon' id='btnFlashcard' title='Mode Flashcard' aria-label='Mode Flashcard'>📚</button>
-
+      <button class='btn-icon' id='authBtn' onclick='openAuthModal()' title='Connexion'>👤</button>
       <button class='btn-icon' id='themeToggle' title='Mode sombre / clair' aria-label='Changer de thème'>🌙</button>
-
-      <button class='btn-admin' onclick='openAdmin()'>
-        ⚙ <span class='btn-admin-text'>Admin</span>
-      </button>
+      <a class='btn-admin' href='app.html'>
+        📖 <span class='btn-admin-text'>Dictionnaire</span>
+      </a>
     </div>
   </header>
 
   <!-- MAIN -->
   <main>
-    <!-- HERO ANIMÉ -->
+    <!-- HERO -->
     <section class='hero'>
       <h1 id='heroTitle'></h1>
-      <p>Retrouve toutes les définitions de Management, Droit, Économie et RH</p>
+      <p>Le dictionnaire de révision pensé pour les élèves de STMG. Management, Droit, Économie et RH, réunis dans une seule appli claire et rapide.</p>
 
-      <div class='search-wrap'>
-        <svg class='search-icon' width='17' height='17' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'>
-          <circle cx='11' cy='11' r='8'/>
-          <path d='m21 21-4.35-4.35'/>
-        </svg>
-
-        <input type='text' id='searchInput' placeholder='Rechercher un terme...' autocomplete='off' oninput='onSearch()'>
-
-        <button class='search-clear' id='searchClear' onclick='clearSearch()' aria-label='Effacer'>×</button>
+      <div class='landing-cta-row'>
+        <a class='btn-add landing-cta-primary' href='app.html'>📖 Ouvrir le dictionnaire</a>
+        <a class='btn-secondary landing-cta-secondary' href='propose.html'>✍️ Proposer une définition</a>
       </div>
-
-      <div class='search-history' id='searchHistory'></div>
-      <div class='definition-counter' id='defCounter'></div>
     </section>
 
-    <!-- FILTRES DROPDOWN -->
-    <nav class='filters-dropdown' aria-label='Filtres'>
-      <div class='filter-dropdown-wrap'>
-        <button class='filter-dropdown-btn' id='filterDropdownBtn' onclick='toggleFilterDropdown()'>
-          <span class='filter-dropdown-dot' id='filterDropdownDot'></span>
-          <span id='filterDropdownLabel'>Toutes les matières</span>
-          <svg class='filter-dropdown-arrow' width='12' height='12' viewBox='0 0 12 12' fill='none'>
-            <path d='M2.5 4.5L6 8L9.5 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/>
-          </svg>
-        </button>
-        <div class='filter-dropdown-menu' id='filterDropdownMenu'>
-          <button class='filter-dropdown-item active' data-filter='all' onclick='setFilterFromDropdown("all", this)'>
-            <span class='filter-dot' style='background:var(--text)'></span>Toutes les matières
-          </button>
-          <button class='filter-dropdown-item' data-filter='Management' onclick='setFilterFromDropdown("Management", this)'>
-            <span class='filter-dot' style='background:var(--mgt)'></span>Management
-          </button>
-          <button class='filter-dropdown-item' data-filter='Droit' onclick='setFilterFromDropdown("Droit", this)'>
-            <span class='filter-dot' style='background:var(--drt)'></span>Droit
-          </button>
-          <button class='filter-dropdown-item' data-filter='Économie' onclick='setFilterFromDropdown("Économie", this)'>
-            <span class='filter-dot' style='background:var(--eco)'></span>Économie
-          </button>
-          <button class='filter-dropdown-item' data-filter='RH' onclick='setFilterFromDropdown("RH", this)'>
-            <span class='filter-dot' style='background:var(--rh)'></span>RH
-          </button>
-          <div class='filter-dropdown-divider'></div>
-          <button class='filter-dropdown-item filter-dropdown-fav' data-filter='favorites' onclick='setFilterFromDropdown("favorites", this)'>
-            <span class='filter-fav-star'>★</span>Mes favoris
-          </button>
+    <!-- MATIÈRES -->
+    <section class='landing-subjects'>
+      <div class='landing-subject-card' style='border-left:2px solid var(--mgt)'>
+        <span class='matiere-badge badge-Management'>Management</span>
+        <p>Diriger, organiser, motiver une équipe.</p>
+      </div>
+      <div class='landing-subject-card' style='border-left:2px solid var(--drt)'>
+        <span class='matiere-badge badge-Droit'>Droit</span>
+        <p>Comprendre les règles qui encadrent l'entreprise.</p>
+      </div>
+      <div class='landing-subject-card' style='border-left:2px solid var(--eco)'>
+        <span class='matiere-badge badge-Économie'>Économie</span>
+        <p>Décrypter les grands mécanismes économiques.</p>
+      </div>
+      <div class='landing-subject-card' style='border-left:2px solid var(--rh)'>
+        <span class='matiere-badge badge-RH'>RH</span>
+        <p>Recruter, former, gérer les talents.</p>
+      </div>
+    </section>
+
+    <!-- POURQUOI LEXIPROF -->
+    <section class='landing-features'>
+      <div class='landing-feature'>
+        <span class='landing-feature-icon'>🔍</span>
+        <div>
+          <h3>Recherche instantanée</h3>
+          <p>Tape un terme, même approximatif, et trouve la définition en un instant.</p>
         </div>
       </div>
-    </nav>
-
-    <!-- RESULTS -->
-    <div class='results-info' id='resultsInfo'></div>
-
-    <!-- SKELETON LOADING -->
-    <div class='skeleton-container' id='skeletonContainer' style='display:none'>
-      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
-      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
-      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
-      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
-      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
-    </div>
-
-    <!-- CARTES -->
-    <section class='cards' id='cardsContainer' aria-live='polite'></section>
-
-    <!-- SENTINELLE SCROLL INFINI -->
-    <div class='scroll-sentinel' id='scrollSentinel'></div>
+      <div class='landing-feature'>
+        <span class='landing-feature-icon'>📚</span>
+        <div>
+          <h3>Mode Flashcards</h3>
+          <p>Révise en mode question/réponse, à ton rythme.</p>
+        </div>
+      </div>
+      <div class='landing-feature'>
+        <span class='landing-feature-icon'>🎲</span>
+        <div>
+          <h3>Définition aléatoire</h3>
+          <p>Découvre un nouveau terme chaque jour.</p>
+        </div>
+      </div>
+      <div class='landing-feature'>
+        <span class='landing-feature-icon'>✍️</span>
+        <div>
+          <h3>Propose tes définitions</h3>
+          <p>Contribue au dictionnaire, ta proposition est relue avant publication.</p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- SCROLL TOP -->
-  <button class='scroll-top' id='scrollTop' onclick='window.scrollTo({top:0,behavior:"smooth"})' title='Remonter en haut' aria-label='Remonter en haut'>↑</button>
-
-  <!-- BARRE DE PROGRESSION -->
-  <div class='reading-progress' id='readingProgress'></div>
-
-  <!-- AUTH MODAL -->
+  <!-- AUTH MODAL (COSMÉTIQUE — pas encore fonctionnel) -->
   <div class='overlay' id='authOverlay' onclick='if(event.target===this)closeAuthModal()'>
     <div class='auth-modal'>
       <div class='auth-header'>
@@ -156,7 +128,8 @@
             <label for='authPassword'>Mot de passe</label>
             <input type='password' id='authPassword' placeholder='••••••••'>
           </div>
-          <button class='btn-add' onclick='handleLogin()'>Se connecter</button>
+          <button class='btn-add' onclick='handleCosmeticAuth()'>Se connecter</button>
+          <p class='auth-soon-note'>Les comptes arrivent bientôt — le dictionnaire reste utilisable sans inscription.</p>
         </div>
         <div class='auth-form' id='registerForm'>
           <div class='form-row'>
@@ -164,149 +137,16 @@
             <input type='text' id='authDisplayName' placeholder='Ton prénom'>
           </div>
           <div class='form-row'>
-            <label for='authEmail'>Email</label>
-            <input type='email' id='authEmail' placeholder='ton@email.fr'>
+            <label for='authEmailReg'>Email</label>
+            <input type='email' id='authEmailReg' placeholder='ton@email.fr'>
           </div>
           <div class='form-row'>
-            <label for='authPassword'>Mot de passe</label>
-            <input type='password' id='authPassword' placeholder='••••••••'>
+            <label for='authPasswordReg'>Mot de passe</label>
+            <input type='password' id='authPasswordReg' placeholder='••••••••'>
           </div>
-          <button class='btn-add' onclick='handleRegister()'>Créer un compte</button>
+          <button class='btn-add' onclick='handleCosmeticAuth()'>Créer un compte</button>
+          <p class='auth-soon-note'>Les comptes arrivent bientôt — le dictionnaire reste utilisable sans inscription.</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ADMIN OVERLAY -->
-  <div class='overlay' id='overlay' onclick='handleOverlayClick(event)'>
-    <div class='admin-panel' id='adminPanel'>
-      <div class='admin-header'>
-        <div>
-          <h2>Interface Admin</h2>
-          <p class='admin-subtitle'>Gérer les définitions de LexiProf</p>
-        </div>
-        <button class='btn-close' onclick='closeAdmin()' aria-label='Fermer'>×</button>
-      </div>
-
-      <div class='admin-body'>
-        <section class='form-section'>
-          <h3 id='formTitle'>Ajouter une définition</h3>
-          <div class='form-row'>
-            <label for='formTerm'>Terme</label>
-            <input type='text' id='formTerm' placeholder='Ex : Leadership'>
-          </div>
-          <div class='form-row'>
-            <label for='formMatiere'>Matière</label>
-            <select id='formMatiere'>
-              <option value='Management'>Management</option>
-              <option value='Droit'>Droit</option>
-              <option value='Économie'>Économie</option>
-              <option value='RH'>RH</option>
-            </select>
-          </div>
-          <div class='form-row'>
-            <label for='formDef'>Définition</label>
-            <textarea id='formDef' placeholder='Saisir la définition complète...'></textarea>
-          </div>
-          <div class='form-row'>
-            <label for='formExample'>Exemple concret <span>(optionnel)</span></label>
-            <textarea id='formExample' placeholder='Un exemple pour illustrer...'></textarea>
-          </div>
-          <div class='form-row'>
-            <label for='formRemember'>À retenir <span>(optionnel)</span></label>
-            <textarea id='formRemember' placeholder='Une phrase courte à retenir...'></textarea>
-          </div>
-          <button class='btn-add' id='btnFormAction' onclick='handleFormAction()'>+ Ajouter la définition</button>
-          <button class='btn-cancel-edit' id='btnCancelEdit' onclick='cancelEdit()' style='display:none'>Annuler la modification</button>
-        </section>
-
-        <section class='form-section import-section'>
-          <h3>📥 Import massif</h3>
-          <div class='form-row'>
-            <label for='jsonImport'>Importer un fichier JSON</label>
-            <input type='file' id='jsonImport' accept='.json,application/json'>
-          </div>
-          <button class='btn-add' onclick='importJson()'>📥 Importer le fichier</button>
-          <div class='form-row json-paste-row'>
-            <label for='jsonPaste'>Ou coller directement le JSON</label>
-            <textarea id='jsonPaste' class='json-editor' placeholder='[ { "term": "Leadership", "matiere": "Management", "def": "Définition..." } ]'></textarea>
-          </div>
-          <button class='btn-add' onclick='handleJSONImport()'>📋 Importer le JSON collé</button>
-          <button class='btn-secondary' onclick='exportJson()'>📤 Exporter toutes les définitions</button>
-        </section>
-
-        <section class='admin-definitions'>
-          <div class='admin-list-heading'>
-            <div>
-              <h3>Définitions enregistrées</h3>
-              <p><span id='adminCount'>0</span> définition(s)</p>
-            </div>
-          </div>
-          <div id='adminList' class='admin-list'></div>
-        </section>
-
-        <section class='change-pwd-section'>
-          <button class='change-pwd-toggle' onclick='toggleChangePwd()'>🔑 Changer le mot de passe admin</button>
-          <div class='change-pwd-form' id='changePwdForm'>
-            <div class='form-row' style='margin-top:12px'>
-              <label for='newPwd1'>Nouveau mot de passe</label>
-              <input type='password' id='newPwd1' placeholder='Nouveau mot de passe'>
-            </div>
-            <div class='form-row'>
-              <label for='newPwd2'>Confirmation</label>
-              <input type='password' id='newPwd2' placeholder='Répéter le mot de passe'>
-            </div>
-            <button class='btn-add' onclick='changePassword()' style='background:var(--rh)'>Enregistrer</button>
-          </div>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <!-- PASSWORD OVERLAY -->
-  <div class='overlay' id='pwdOverlay'>
-    <div class='pwd-modal'>
-      <div class='lock-icon'>🔒</div>
-      <h2>Accès Admin</h2>
-      <p>Entrez le mot de passe pour accéder à l'interface.</p>
-      <input type='password' id='pwdInput' placeholder='••••••••' autocomplete='current-password' onkeydown='if(event.key==="Enter") checkPassword()'>
-      <div class='pwd-error' id='pwdError'></div>
-      <button class='btn-unlock' onclick='checkPassword()'>Déverrouiller</button>
-      <button class='pwd-cancel' onclick='closePwdModal()'>Annuler</button>
-    </div>
-  </div>
-
-  <!-- FLASHCARD OVERLAY -->
-  <div class='overlay' id='flashcardOverlay' onclick='closeFlashcard(event)'>
-    <div class='flashcard-modal' onclick='event.stopPropagation()'>
-      <div class='flashcard-header'>
-        <span class='flashcard-counter' id='flashcardCounter'>1 / 1</span>
-        <button class='btn-close' onclick='closeFlashcard()'>×</button>
-      </div>
-      <div class='flashcard-body' id='flashcardBody' onclick='revealFlashcard()'>
-        <div class='flashcard-matiere' id='flashcardMeta'>Management</div>
-        <div class='flashcard-term' id='flashcardTerm'>Terme</div>
-        <div class='flashcard-reveal' id='flashcardReveal'>Cliquez pour révéler</div>
-        <div class='flashcard-def' id='flashcardDef' style='display:none'>Définition</div>
-      </div>
-      <div class='flashcard-actions'>
-        <button class='flashcard-btn' onclick='prevFlashcard()'>← Précédent</button>
-        <button class='flashcard-btn primary' onclick='nextFlashcard()'>Suivant →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- DÉFINITION ALÉATOIRE -->
-  <div class='random-modal' id='randomModal'>
-    <div class='random-modal-card'>
-      <button class='random-close' onclick='closeRandomModal()' aria-label='Fermer'>×</button>
-      <span class='random-label'>🎲 DÉFINITION ALÉATOIRE</span>
-      <div class='random-matiere' id='randomMatiere'></div>
-      <h2 id='randomTerm'></h2>
-      <p id='randomDef'></p>
-      <div class='random-actions'>
-        <button onclick='openRandomDefinition()'>📖 Ouvrir la fiche</button>
-        <button class='secondary' onclick='showRandomDefinition()'>🎲 Une autre</button>
       </div>
     </div>
   </div>
@@ -327,13 +167,6 @@
     <span>Installer LexiProf</span>
   </button>
 
-  <!-- RACCOURCIS -->
-  <div class='keyboard-hint' id='keyboardHint'>
-    <kbd>/</kbd> rechercher
-    <kbd>R</kbd> aléatoire
-    <kbd>Esc</kbd> fermer
-  </div>
-
   <!-- TOAST -->
   <div class='toast' id='toast' role='status' aria-live='polite'></div>
 
@@ -342,13 +175,13 @@
     <strong>LexiProf</strong>
     <span>· Dictionnaire STMG</span>
     <br>
-    <small>Sécurisé via Cloudflare Workers</small>
+    <small>Site en développement actif</small>
   </footer>
 
   <!-- SCRIPTS -->
-  <script src='js/config.js?v=8'></script>
-  <script src='js/storage.js?v=8'></script>
-  <script src='js/app.js?v=8'></script>
+  <script src='js/config.js?v=9'></script>
+  <script src='js/storage.js?v=9'></script>
+  <script src='js/app.js?v=9'></script>
 </body>
 
 </html>
