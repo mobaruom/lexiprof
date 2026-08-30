@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang='fr'>
+
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta name='theme-color' content='#f7f5f0'>
+  <meta name='description' content='LexiProf — Propose une définition.'>
+
+  <link rel='manifest' href='manifest.json'>
+  <title>Proposer une définition — LexiProf</title>
+  <link rel='stylesheet' href='css/style.css?v=9'>
+
+  <link
+    href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
+    rel='stylesheet'
+  >
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class='logo'>
+      <a href='index.html' style='display:flex;align-items:baseline;gap:6px'>
+        <span class='logo-main'>LexiProf</span>
+        <span class='logo-tag'>· STMG</span>
+      </a>
+    </div>
+
+    <div class='header-actions'>
+      <button class='btn-icon' id='themeToggle' title='Mode sombre / clair' aria-label='Changer de thème'>🌙</button>
+      <a class='btn-admin' href='app.html'>
+        📖 <span class='btn-admin-text'>Dictionnaire</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <div class='propose-intro'>
+      <h1>✍️ Proposer une définition</h1>
+      <p>Ta proposition sera relue avant d'être ajoutée au dictionnaire. Le pseudo et l'email sont facultatifs.</p>
+    </div>
+
+    <!-- FORMULAIRE -->
+    <section class='form-section' id='proposeFormSection'>
+      <div class='form-row'>
+        <label for='pTerm'>Terme</label>
+        <input type='text' id='pTerm' placeholder='Ex : Externalité'>
+      </div>
+      <div class='form-row'>
+        <label for='pMatiere'>Matière</label>
+        <select id='pMatiere'>
+          <option value='Management'>Management</option>
+          <option value='Droit'>Droit</option>
+          <option value='Économie'>Économie</option>
+          <option value='RH'>RH</option>
+        </select>
+      </div>
+      <div class='form-row'>
+        <label for='pDef'>Définition</label>
+        <textarea id='pDef' placeholder='Saisir la définition complète...'></textarea>
+      </div>
+      <div class='form-row'>
+        <label for='pExample'>Exemple concret <span>(optionnel)</span></label>
+        <textarea id='pExample' placeholder='Un exemple pour illustrer...'></textarea>
+      </div>
+      <div class='form-row'>
+        <label for='pRemember'>À retenir <span>(optionnel)</span></label>
+        <textarea id='pRemember' placeholder='Une phrase courte à retenir...'></textarea>
+      </div>
+      <div class='form-row'>
+        <label for='pPseudo'>Ton pseudo <span>(optionnel)</span></label>
+        <input type='text' id='pPseudo' placeholder='Ex : Léa T.'>
+      </div>
+      <div class='form-row'>
+        <label for='pEmail'>Ton email <span>(optionnel, pour te répondre)</span></label>
+        <input type='email' id='pEmail' placeholder='ton@email.fr'>
+      </div>
+
+      <!-- HONEYPOT ANTI-SPAM : champ invisible, un bot le remplira, un humain jamais -->
+      <div class='propose-honeypot' aria-hidden='true'>
+        <label for='pWebsite'>Site web</label>
+        <input type='text' id='pWebsite' name='website' tabindex='-1' autocomplete='off'>
+      </div>
+
+      <button class='btn-add' onclick='handleProposalSubmit()'>📤 Envoyer ma proposition</button>
+    </section>
+
+    <!-- ÉTAT SUCCÈS -->
+    <section class='form-section' id='proposeSuccessSection' style='display:none;text-align:center'>
+      <h3 style='text-transform:none;font-size:16px;color:var(--success)'>✅ Proposition envoyée !</h3>
+      <p style='color:var(--text-soft);font-size:13px;margin-top:8px'>Merci, elle sera examinée avant publication.</p>
+      <button class='btn-secondary' style='margin-top:14px' onclick='resetProposalForm()'>Proposer une autre définition</button>
+    </section>
+  </main>
+
+  <!-- TOAST -->
+  <div class='toast' id='toast' role='status' aria-live='polite'></div>
+
+  <!-- FOOTER -->
+  <footer>
+    <strong>LexiProf</strong>
+    <span>· Dictionnaire STMG</span>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src='js/config.js?v=9'></script>
+  <script src='js/storage.js?v=9'></script>
+  <script src='js/app.js?v=9'></script>
+</body>
+
+</html>
