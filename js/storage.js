@@ -1,58 +1,31 @@
 /* ============================================================
-   LEXIPROF v8 — STORAGE.JS
-   API Cloudflare Worker | Cache local | Fallback offline
+   LEXIPROF — STORAGE.JS
+   Appels directs à JSONBin (pas de backend), cache local,
+   favoris locaux, mot de passe admin local, propositions.
    ============================================================ */
 
 // ============================================================
-// API HELPERS
+// APPELS JSONBIN
 // ============================================================
-function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
 function getHeaders() {
-  const headers = { 'Content-Type': 'application/json' };
-  const token = getToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
+  return {
+    "Content-Type": "application/json",
+    "X-Master-Key": JSONBIN_MASTER_KEY
+  };
 }
 
-async function apiGet(endpoint) {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: getHeaders(),
-    cache: 'no-store'
-  });
+async function apiGet(binId) {
+  const res = await fetch(`${API_BASE_URL}/b/${binId}/latest`, { headers: getHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data.record) ? data.record : [];
 }
 
-async function apiPost(endpoint, body) {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'POST',
+async function apiPut(binId, arr) {
+  const res = await fetch(`${API_BASE_URL}/b/${binId}`, {
+    method: "PUT",
     headers: getHeaders(),
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Erreur' }));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-async function apiPut(endpoint, body) {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-async function apiDelete(endpoint) {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'DELETE',
-    headers: getHeaders()
+    body: JSON.stringify(arr)
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -76,177 +49,115 @@ function getCache(key) {
 
 function setCache(key, data, ttl) {
   try {
-    localStorage.setItem(`cache:${key}`, JSON.stringify({
-      data,
-      expiry: Date.now() + ttl
-    }));
-  } catch (e) { console.warn('Cache error:', e); }
+    localStorage.setItem(`cache:${key}`, JSON.stringify({ data, expiry: Date.now() + ttl }));
+  } catch (e) { console.warn("Cache error:", e); }
 }
 
 function clearCache(pattern) {
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('cache:'));
+  const keys = Object.keys(localStorage).filter(k => k.startsWith("cache:"));
   for (const k of keys) {
     if (!pattern || k.includes(pattern)) localStorage.removeItem(k);
   }
 }
 
 // ============================================================
-// CHARGEMENT DÉFINITIONS
+// DÉFINITIONS
 // ============================================================
 async function loadRemote() {
-  const cacheKey = `defs:${currentFilter}:${searchQuery}`;
+  const cacheKey = "defs:all";
   const cached = getCache(cacheKey);
-  
   if (cached) {
     definitions = cached;
-    console.log('✅ Cache local:', definitions.length, 'définitions');
     return true;
   }
-  
+
   try {
-    const params = new URLSearchParams();
-    if (currentFilter !== 'all') params.set('matiere', currentFilter);
-    if (searchQuery) params.set('q', searchQuery);
-    
-    const data = await apiGet(`/api/definitions?${params}`);
+    const data = await apiGet(JSONBIN_BIN_ID);
     definitions = data.map(normalizeDefinition);
-    
-    // Cache
-    const ttl = searchQuery ? CACHE_CONFIG.search_ttl : CACHE_CONFIG.definitions_ttl;
-    setCache(cacheKey, definitions, ttl);
-    
-    // Fallback
-    try {
-      localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
-    } catch (e) {}
-    
-    console.log('✅ API Worker:', definitions.length, 'définitions');
+    setCache(cacheKey, definitions, CACHE_CONFIG.definitions_ttl);
+    localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
     return true;
-    
   } catch (error) {
-    console.warn('⚠️ API indisponible:', error.message);
-    
-    // Fallback local
+    console.warn("⚠️ JSONBin indisponible:", error.message);
     try {
       const stored = localStorage.getItem(FALLBACK_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length) {
           definitions = parsed.map(normalizeDefinition);
-          console.log('✅ Fallback local:', definitions.length, 'définitions');
           return true;
         }
       }
-    } catch (e) {
-      localStorage.removeItem(FALLBACK_KEY);
-    }
-    
-    // Dernier recours
+    } catch (e) { localStorage.removeItem(FALLBACK_KEY); }
     definitions = defaultData.map(normalizeDefinition);
-    console.log('✅ Données par défaut:', definitions.length, 'définitions');
     return false;
   }
 }
 
-// ============================================================
-// SAUVEGARDE
-// ============================================================
-async function saveRemote() {
-  // Pas de sauvegarde globale — chaque action est une requête API
-  // Les favoris sont gérés par l'API
-  clearCache('defs');
+async function saveDefinitionsRemote() {
+  await apiPut(JSONBIN_BIN_ID, definitions);
+  clearCache("defs");
+  localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
 }
 
 // ============================================================
-// AUTH
+// PROPOSITIONS
 // ============================================================
-async function register(email, password, displayName) {
-  const data = await apiPost('/api/auth/register', {
-    email,
-    password,
-    display_name: displayName
-  });
-  localStorage.setItem(TOKEN_KEY, data.token);
-  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-  return data;
+async function submitProposalRemote(proposal) {
+  let current = [];
+  try { current = await apiGet(JSONBIN_PROPOSALS_BIN_ID); } catch (e) { current = []; }
+  const nextPid = current.length ? Math.max(...current.map(p => Number(p.id) || 0)) + 1 : 1;
+  const entry = {
+    id: nextPid,
+    term: String(proposal.term || "").trim().slice(0, 120),
+    matiere: String(proposal.matiere || "Management").trim(),
+    def: String(proposal.def || "").trim().slice(0, 2000),
+    example: String(proposal.example || "").trim().slice(0, 1000),
+    remember: String(proposal.remember || "").trim().slice(0, 500),
+    pseudo: String(proposal.pseudo || "").trim().slice(0, 60),
+    email: String(proposal.email || "").trim().slice(0, 120),
+    status: "pending",
+    createdAt: new Date().toISOString()
+  };
+  current.push(entry);
+  await apiPut(JSONBIN_PROPOSALS_BIN_ID, current);
+  return entry;
 }
 
-async function login(email, password) {
-  const data = await apiPost('/api/auth/login', { email, password });
-  localStorage.setItem(TOKEN_KEY, data.token);
-  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-  return data;
+async function fetchProposalsRemote() {
+  return apiGet(JSONBIN_PROPOSALS_BIN_ID);
 }
 
-function logout() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  clearCache('');
-}
-
-function getUser() {
-  try {
-    return JSON.parse(localStorage.getItem(USER_KEY));
-  } catch { return null; }
-}
-
-function isLoggedIn() {
-  return !!getToken();
+async function saveProposalsRemote(fullArray) {
+  return apiPut(JSONBIN_PROPOSALS_BIN_ID, fullArray);
 }
 
 // ============================================================
-// FAVORIS (API)
+// FAVORIS (100% locaux)
 // ============================================================
-async function loadFavorites() {
-  if (!isLoggedIn()) {
-    // Fallback localStorage pour users non connectés
-    return JSON.parse(localStorage.getItem('lexiprof_favorites') || '[]');
-  }
-  try {
-    const data = await apiGet('/api/favorites');
-    const favIds = data.map(d => Number(d.id));
-    localStorage.setItem('lexiprof_favorites', JSON.stringify(favIds));
-    return favIds;
-  } catch {
-    return JSON.parse(localStorage.getItem('lexiprof_favorites') || '[]');
-  }
+function loadFavoritesLocal() {
+  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }
+  catch { return []; }
 }
 
-async function toggleFavoriteAPI(definitionId) {
-  if (!isLoggedIn()) {
-    // Mode offline — localStorage uniquement
-    const favs = JSON.parse(localStorage.getItem('lexiprof_favorites') || '[]');
-    const id = Number(definitionId);
-    if (favs.includes(id)) {
-      const newFavs = favs.filter(x => x !== id);
-      localStorage.setItem('lexiprof_favorites', JSON.stringify(newFavs));
-      return { favorited: false };
-    } else {
-      favs.push(id);
-      localStorage.setItem('lexiprof_favorites', JSON.stringify(favs));
-      return { favorited: true };
-    }
-  }
-  
-  try {
-    const result = await apiPost('/api/favorites', { definition_id: definitionId });
-    // Sync local
-    const data = await apiGet('/api/favorites');
-    const favIds = data.map(d => Number(d.id));
-    localStorage.setItem('lexiprof_favorites', JSON.stringify(favIds));
-    return result;
-  } catch {
-    // Fallback local
-    const favs = JSON.parse(localStorage.getItem('lexiprof_favorites') || '[]');
-    const id = Number(definitionId);
-    if (favs.includes(id)) {
-      const newFavs = favs.filter(x => x !== id);
-      localStorage.setItem('lexiprof_favorites', JSON.stringify(newFavs));
-      return { favorited: false };
-    } else {
-      favs.push(id);
-      localStorage.setItem('lexiprof_favorites', JSON.stringify(favs));
-      return { favorited: true };
-    }
-  }
+function toggleFavoriteLocal(id) {
+  id = Number(id);
+  const favs = loadFavoritesLocal();
+  const idx = favs.indexOf(id);
+  let favorited;
+  if (idx > -1) { favs.splice(idx, 1); favorited = false; }
+  else { favs.push(id); favorited = true; }
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+  return { favorited };
+}
+
+// ============================================================
+// MOT DE PASSE ADMIN (local, protection visuelle uniquement)
+// ============================================================
+function getAdminPassword() {
+  return localStorage.getItem(PWD_KEY) || DEFAULT_PW;
+}
+
+function setAdminPassword(pwd) {
+  localStorage.setItem(PWD_KEY, pwd);
 }
