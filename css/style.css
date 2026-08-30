@@ -2123,11 +2123,16 @@ body.retro-mode::after {
   margin: 0 auto;
 }
 
+.landing-cta-row .btn-add,
+.landing-cta-row .btn-secondary {
+  width: auto;
+  margin-top: 0;
+}
+
 .landing-cta-primary,
 .landing-cta-secondary {
-  flex: 1;
-  min-width: 200px;
-  white-space: nowrap;
+  flex: 1 1 200px;
+  white-space: normal;
 }
 
 .landing-subjects {
