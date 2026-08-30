@@ -1,10 +1,12 @@
 /* ============================================================
-   LEXIPROF v8 — APP.JS
-   Cloudflare Worker API | Auth JWT | Cache optimisé
+   LEXIPROF v9 — APP.JS
+   Fichier unique partagé par les 4 pages (index/app/admin/propose).
+   Chaque fonction se protège en vérifiant que les éléments DOM
+   dont elle a besoin existent avant d'agir.
    ============================================================ */
 
 /* ============================================================
-   DONNÉES DE BASE (fallback offline)
+   DONNÉES DE SECOURS (si JSONBin est injoignable)
    ============================================================ */
 const defaultData = [
   { id: 1, term: "Management", matiere: "Management", def: "Ensemble des techniques permettant de diriger, organiser et coordonner les ressources d'une organisation afin d'atteindre ses objectifs.", example: "Un manager organise le travail de son équipe, répartit les tâches et suit les résultats.", remember: "Le management consiste notamment à organiser, décider, coordonner et motiver." },
@@ -19,7 +21,7 @@ const defaultData = [
 ];
 
 /* ============================================================
-   ÉTAT
+   ÉTAT GLOBAL
    ============================================================ */
 let definitions = [];
 let currentFilter = "all";
@@ -29,11 +31,12 @@ let currentFlashcardIndex = 0;
 let flashcardList = [];
 let deferredInstallPrompt = null;
 let editingDefinitionId = null;
-let searchHistory = JSON.parse(localStorage.getItem("lexiprof_search_history") || "[]");
+let searchHistory = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || "[]");
 let currentRandomId = null;
 let isDropdownOpen = false;
 let isFocusMode = false;
 let displayedCount = 0;
+let proposalsCache = [];
 const BATCH_SIZE = 10;
 
 /* ============================================================
@@ -73,17 +76,58 @@ function highlight(text, q) {
 }
 
 /* ============================================================
-   CHARGEMENT
+   RECHERCHE FLOUE (tolérance aux fautes de frappe)
    ============================================================ */
-async function load() {
+function normalizeText(s) {
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function fuzzyIncludes(haystack, needle) {
+  const h = normalizeText(haystack);
+  const n = normalizeText(needle);
+  if (!n) return true;
+  if (h.includes(n)) return true;
+  const words = h.split(/[^a-z0-9]+/).filter(Boolean);
+  const threshold = n.length <= 4 ? 1 : (n.length <= 8 ? 2 : 3);
+  for (const w of words) {
+    if (Math.abs(w.length - n.length) > threshold) continue;
+    if (levenshtein(w, n) <= threshold) return true;
+  }
+  return false;
+}
+
+/* ============================================================
+   CHARGEMENT (page dictionnaire)
+   ============================================================ */
+async function loadAndRenderApp() {
   setLoading(true);
   try {
     await loadRemote();
-    favorites = await loadFavorites();
+    favorites = loadFavoritesLocal();
   } catch (e) {
     console.error(e);
   }
   render();
+  hideLoader();
+}
+
+function hideLoader() {
   const loader = document.getElementById("globalLoader");
   if (loader) loader.classList.add("hidden");
 }
@@ -102,10 +146,10 @@ function setLoading(on) {
 }
 
 /* ============================================================
-   FILTRAGE + PAGINATION (scroll infini)
+   FILTRAGE + PAGINATION
    ============================================================ */
 function getFilteredDefinitions() {
-  const q = searchQuery.toLowerCase().trim();
+  const q = searchQuery.trim();
   let filtered = [...definitions];
 
   if (currentFilter === "favorites") {
@@ -115,20 +159,13 @@ function getFilteredDefinitions() {
   }
 
   if (q) {
-    filtered = filtered.filter(d => {
-      const term = d.term.toLowerCase();
-      const def = d.def.toLowerCase();
-      return term.includes(q) || def.includes(q);
-    });
+    filtered = filtered.filter(d => fuzzyIncludes(d.term, q) || fuzzyIncludes(d.def, q));
   }
 
   filtered.sort((a, b) => a.term.localeCompare(b.term, "fr"));
   return filtered;
 }
 
-/* ============================================================
-   RENDER PRINCIPAL (avec scroll infini)
-   ============================================================ */
 function render() {
   const container = document.getElementById("cardsContainer");
   const info = document.getElementById("resultsInfo");
@@ -155,19 +192,19 @@ function render() {
       </div>
     `;
     displayedCount = 0;
+    setLoading(false);
     return;
   }
 
-  // Scroll infini : affiche par batch
   displayedCount = Math.min(BATCH_SIZE, filtered.length);
   renderBatch(filtered, 0, displayedCount);
-  
-  // Active l'observer pour charger plus
   setupScrollObserver(filtered);
+  setLoading(false);
 }
 
 function renderBatch(filtered, start, end) {
   const container = document.getElementById("cardsContainer");
+  if (!container) return;
   if (start === 0) {
     container.innerHTML = filtered.slice(start, end).map((d, i) => createCardHTML(d, i)).join("");
   } else {
@@ -179,9 +216,7 @@ function renderBatch(filtered, start, end) {
 function setupScrollObserver(filtered) {
   const sentinel = document.getElementById("scrollSentinel");
   if (!sentinel) return;
-  
   if (window._scrollObserver) window._scrollObserver.disconnect();
-  
   window._scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && displayedCount < filtered.length) {
@@ -191,26 +226,17 @@ function setupScrollObserver(filtered) {
       }
     });
   }, { rootMargin: "100px" });
-  
   window._scrollObserver.observe(sentinel);
 }
 
 /* ============================================================
-   CARTE (glassmorphism, border-left 2px pastel, micro-interactions)
+   CARTE
    ============================================================ */
 function createCardHTML(d, index) {
   const isFav = favorites.includes(Number(d.id));
-  const matiereColors = {
-    "Management": "var(--mgt)",
-    "Droit": "var(--drt)",
-    "Économie": "var(--eco)",
-    "RH": "var(--rh)"
-  };
-  const borderColor = matiereColors[d.matiere] || "var(--text)";
-  
   return `
-    <article class="card" data-id="${d.id}" data-matiere="${escapeHTML(d.matiere)}" 
-      style="animation-delay:${Math.min(index * 30, 300)}ms;--card-border-color:${borderColor}">
+    <article class="card" data-id="${d.id}" data-matiere="${escapeHTML(d.matiere)}"
+      style="animation-delay:${Math.min(index * 30, 300)}ms">
       <div class="card-top">
         <div class="card-term">${highlight(d.term, searchQuery)}</div>
         <span class="matiere-badge badge-${escapeHTML(d.matiere)}">${escapeHTML(d.matiere)}</span>
@@ -245,9 +271,6 @@ function toggleCard(id, btn) {
   }
 }
 
-/* ============================================================
-   COPIER / PARTAGER
-   ============================================================ */
 async function copyDefinition(id) {
   const d = definitions.find(x => Number(x.id) === Number(id));
   if (!d) return;
@@ -266,9 +289,7 @@ async function shareDefinition(id) {
   const url = `${location.origin}${location.pathname}#def=${d.id}`;
   const text = `${d.term} — ${d.matiere}`;
   if (navigator.share) {
-    try {
-      await navigator.share({ title: `LexiProf — ${d.term}`, text, url });
-    } catch (e) { /* annulé */ }
+    try { await navigator.share({ title: `LexiProf — ${d.term}`, text, url }); } catch (e) {}
   } else {
     try {
       await navigator.clipboard.writeText(url);
@@ -279,9 +300,6 @@ async function shareDefinition(id) {
   }
 }
 
-/* ============================================================
-   HASH (lien direct)
-   ============================================================ */
 function checkHash() {
   const hash = location.hash;
   if (!hash.startsWith("#def=")) return;
@@ -306,7 +324,6 @@ function onSearch() {
   searchQuery = input.value;
   updateSearchClear();
   addToSearchHistory(searchQuery);
-  // Reset pagination
   displayedCount = 0;
   render();
 }
@@ -333,7 +350,7 @@ function addToSearchHistory(query) {
   searchHistory = searchHistory.filter(q => q.toLowerCase() !== query.toLowerCase());
   searchHistory.unshift(query);
   if (searchHistory.length > 5) searchHistory.pop();
-  localStorage.setItem("lexiprof_search_history", JSON.stringify(searchHistory));
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory));
   renderSearchHistory();
 }
 
@@ -346,7 +363,7 @@ function renderSearchHistory() {
   }
   container.classList.add("visible");
   container.innerHTML = searchHistory.map(q => `
-    <button onclick="setSearchQuery(${JSON.stringify(escapeHTML(q))})">${escapeHTML(q)}</button>
+    <button onclick='setSearchQuery(${JSON.stringify(q)})'>${escapeHTML(q)}</button>
   `).join("");
 }
 
@@ -373,50 +390,29 @@ function toggleFilterDropdown() {
 
 function setFilterFromDropdown(filter, btn) {
   currentFilter = filter;
-  
-  // Update UI
+
   document.querySelectorAll(".filter-dropdown-item").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
-  
-  // Update label
+
   const label = document.getElementById("filterDropdownLabel");
   const dot = document.getElementById("filterDropdownDot");
   if (label) {
-    const texts = {
-      "all": "Toutes les matières",
-      "Management": "Management",
-      "Droit": "Droit",
-      "Économie": "Économie",
-      "RH": "RH",
-      "favorites": "Mes favoris"
-    };
+    const texts = { all: "Toutes les matières", Management: "Management", Droit: "Droit", Économie: "Économie", RH: "RH", favorites: "Mes favoris" };
     label.textContent = texts[filter] || filter;
   }
   if (dot) {
-    const colors = {
-      "all": "var(--text)",
-      "Management": "var(--mgt)",
-      "Droit": "var(--drt)",
-      "Économie": "var(--eco)",
-      "RH": "var(--rh)",
-      "favorites": "var(--accent)"
-    };
+    const colors = { all: "var(--text)", Management: "var(--mgt)", Droit: "var(--drt)", Économie: "var(--eco)", RH: "var(--rh)", favorites: "var(--accent)" };
     dot.style.background = colors[filter] || "var(--text)";
   }
-  
-  // Close dropdown
+
   isDropdownOpen = false;
-  const menu = document.getElementById("filterDropdownMenu");
-  const btnEl = document.getElementById("filterDropdownBtn");
-  if (menu) menu.classList.remove("open");
-  if (btnEl) btnEl.classList.remove("open");
-  
-  // Reset pagination and render
+  document.getElementById("filterDropdownMenu")?.classList.remove("open");
+  document.getElementById("filterDropdownBtn")?.classList.remove("open");
+
   displayedCount = 0;
   render();
 }
 
-// Ferme le dropdown si clic ailleurs
 document.addEventListener("click", (e) => {
   const wrap = document.querySelector(".filter-dropdown-wrap");
   if (wrap && !wrap.contains(e.target) && isDropdownOpen) {
@@ -427,20 +423,12 @@ document.addEventListener("click", (e) => {
 });
 
 /* ============================================================
-   FAVORIS (API)
+   FAVORIS (locaux)
    ============================================================ */
-async function toggleFavorite(id) {
-  id = Number(id);
-  const result = await toggleFavoriteAPI(id);
-  
-  if (result.favorited) {
-    favorites.push(id);
-    showToast("❤️ Ajouté aux favoris");
-  } else {
-    favorites = favorites.filter(x => x !== id);
-    showToast("🤍 Retiré des favoris");
-  }
-  
+function toggleFavorite(id) {
+  const result = toggleFavoriteLocal(id);
+  favorites = loadFavoritesLocal();
+  showToast(result.favorited ? "❤️ Ajouté aux favoris" : "🤍 Retiré des favoris");
   render();
 }
 
@@ -454,7 +442,7 @@ function updateCounter() {
    MODE SOMBRE
    ============================================================ */
 function initTheme() {
-  const saved = localStorage.getItem("lexiprof_theme");
+  const saved = localStorage.getItem(THEME_KEY);
   if (saved === "dark") document.body.classList.add("dark");
   updateThemeButton();
 }
@@ -462,7 +450,7 @@ function initTheme() {
 function toggleTheme() {
   document.body.classList.toggle("dark");
   const dark = document.body.classList.contains("dark");
-  localStorage.setItem("lexiprof_theme", dark ? "dark" : "light");
+  localStorage.setItem(THEME_KEY, dark ? "dark" : "light");
   updateThemeButton();
 }
 
@@ -475,7 +463,7 @@ function updateThemeButton() {
 }
 
 /* ============================================================
-   MODE FOCUS (lecture immersive)
+   MODE FOCUS
    ============================================================ */
 function toggleFocusMode() {
   isFocusMode = !isFocusMode;
@@ -484,81 +472,14 @@ function toggleFocusMode() {
 }
 
 /* ============================================================
-   AUTH MODALS
+   AUTH COSMÉTIQUE (index.html — pas encore fonctionnel)
    ============================================================ */
 function openAuthModal() {
-  const overlay = document.getElementById("authOverlay");
-  if (overlay) overlay.classList.add("open");
+  document.getElementById("authOverlay")?.classList.add("open");
 }
 
 function closeAuthModal() {
-  const overlay = document.getElementById("authOverlay");
-  if (overlay) overlay.classList.remove("open");
-}
-
-async function handleRegister() {
-  const email = document.getElementById("authEmail")?.value.trim();
-  const password = document.getElementById("authPassword")?.value;
-  const displayName = document.getElementById("authDisplayName")?.value.trim();
-  
-  if (!email || !password) {
-    showToast("⚠️ Email et mot de passe requis");
-    return;
-  }
-  
-  try {
-    await register(email, password, displayName);
-    showToast("✅ Compte créé !");
-    closeAuthModal();
-    updateAuthUI();
-    await load();
-  } catch (e) {
-    showToast("⚠️ " + e.message);
-  }
-}
-
-async function handleLogin() {
-  const email = document.getElementById("authEmail")?.value.trim();
-  const password = document.getElementById("authPassword")?.value;
-  
-  if (!email || !password) {
-    showToast("⚠️ Email et mot de passe requis");
-    return;
-  }
-  
-  try {
-    await login(email, password);
-    showToast("✅ Connecté !");
-    closeAuthModal();
-    updateAuthUI();
-    await load();
-  } catch (e) {
-    showToast("⚠️ " + e.message);
-  }
-}
-
-function handleLogout() {
-  logout();
-  showToast("👋 Déconnecté");
-  updateAuthUI();
-  render();
-}
-
-function updateAuthUI() {
-  const user = getUser();
-  const authBtn = document.getElementById("authBtn");
-  const userDisplay = document.getElementById("userDisplay");
-  
-  if (user) {
-    if (authBtn) authBtn.style.display = "none";
-    if (userDisplay) {
-      userDisplay.style.display = "flex";
-      userDisplay.querySelector(".user-name").textContent = user.display_name || user.email;
-    }
-  } else {
-    if (authBtn) authBtn.style.display = "flex";
-    if (userDisplay) userDisplay.style.display = "none";
-  }
+  document.getElementById("authOverlay")?.classList.remove("open");
 }
 
 function switchAuthTab(tab) {
@@ -566,7 +487,6 @@ function switchAuthTab(tab) {
   const registerTab = document.getElementById("authTabRegister");
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
-  
   if (tab === "login") {
     loginTab?.classList.add("active");
     registerTab?.classList.remove("active");
@@ -580,39 +500,27 @@ function switchAuthTab(tab) {
   }
 }
 
+function handleCosmeticAuth() {
+  closeAuthModal();
+  showToast("👋 Les comptes arrivent bientôt !");
+}
+
 /* ============================================================
-   AUTHENTIFICATION ADMIN (gardé pour compatibilité)
+   ADMIN — VERROUILLAGE (mot de passe local)
    ============================================================ */
-function openAdmin() {
-  const user = getUser();
-  if (!user) {
-    showToast("🔒 Connecte-toi d'abord");
-    openAuthModal();
-    return;
+function initAdminPage() {
+  if (sessionStorage.getItem("lexiprof_admin_unlocked") === "1") {
+    unlockAdminUI();
   }
-  
-  const input = document.getElementById("pwdInput");
-  const error = document.getElementById("pwdError");
-  const overlay = document.getElementById("pwdOverlay");
-  if (!overlay) return;
-  if (input) { input.value = ""; input.classList.remove("error"); }
-  if (error) error.textContent = "";
-  overlay.classList.add("open");
-  setTimeout(() => { if (input) input.focus(); }, 150);
 }
 
-function closePwdModal() {
-  const overlay = document.getElementById("pwdOverlay");
-  if (overlay) overlay.classList.remove("open");
-}
-
-function checkPassword() {
+function checkAdminPasswordPage() {
   const input = document.getElementById("pwdInput");
   const error = document.getElementById("pwdError");
   if (!input) return;
-  if (input.value === getPassword()) {
-    closePwdModal();
-    openAdminPanel();
+  if (input.value === getAdminPassword()) {
+    sessionStorage.setItem("lexiprof_admin_unlocked", "1");
+    unlockAdminUI();
   } else {
     if (error) error.textContent = "Mot de passe incorrect.";
     input.classList.add("error");
@@ -621,27 +529,36 @@ function checkPassword() {
   }
 }
 
-/* ============================================================
-   ADMIN PANEL
-   ============================================================ */
-function openAdminPanel() {
+function unlockAdminUI() {
+  const gate = document.getElementById("pwdGate");
+  const content = document.getElementById("adminContent");
+  if (gate) gate.style.display = "none";
+  if (content) content.style.display = "block";
+  initAdminData();
+}
+
+function lockAdmin() {
+  sessionStorage.removeItem("lexiprof_admin_unlocked");
+  const content = document.getElementById("adminContent");
+  const gate = document.getElementById("pwdGate");
+  if (content) content.style.display = "none";
+  if (gate) gate.style.display = "block";
+  const input = document.getElementById("pwdInput");
+  if (input) input.value = "";
+}
+
+async function initAdminData() {
+  try {
+    clearCache("defs");
+    await loadRemote();
+  } catch (e) { console.error(e); }
   renderAdminList();
-  const changePwd = document.getElementById("changePwdForm");
-  if (changePwd) changePwd.classList.remove("open");
-  const overlay = document.getElementById("overlay");
-  if (overlay) overlay.classList.add("open");
+  await loadProposalsList();
 }
 
-function closeAdmin() {
-  const overlay = document.getElementById("overlay");
-  if (overlay) overlay.classList.remove("open");
-}
-
-function handleOverlayClick(e) {
-  const overlay = document.getElementById("overlay");
-  if (overlay && e.target === overlay) closeAdmin();
-}
-
+/* ============================================================
+   ADMIN — LISTE DES DÉFINITIONS
+   ============================================================ */
 function renderAdminList() {
   const list = document.getElementById("adminList");
   const count = document.getElementById("adminCount");
@@ -669,25 +586,17 @@ function renderAdminList() {
   `).join("");
 }
 
-/* ============================================================
-   FORMULAIRE : AJOUT / MODIFICATION
-   ============================================================ */
 function handleFormAction() {
-  if (editingDefinitionId) {
-    saveEditedDefinition();
-  } else {
-    addDefinition();
-  }
+  if (editingDefinitionId) saveEditedDefinition();
+  else addDefinition();
 }
 
 function cancelEdit() {
   editingDefinitionId = null;
   clearDefinitionForm();
-
   const btnFormAction = document.getElementById("btnFormAction");
   const btnCancelEdit = document.getElementById("btnCancelEdit");
   const formTitle = document.getElementById("formTitle");
-
   if (btnFormAction) btnFormAction.textContent = "+ Ajouter la définition";
   if (btnCancelEdit) btnCancelEdit.style.display = "none";
   if (formTitle) formTitle.textContent = "Ajouter une définition";
@@ -698,34 +607,25 @@ async function addDefinition() {
   const matiere = document.getElementById("formMatiere")?.value;
   const def = document.getElementById("formDef")?.value.trim();
 
-  if (!term || !def) {
-    showToast("⚠️ Remplis le terme et la définition !");
-    return;
-  }
+  if (!term || !def) { showToast("⚠️ Remplis le terme et la définition !"); return; }
 
   const duplicate = definitions.find(d => d.term.toLowerCase() === term.toLowerCase() && d.matiere === matiere);
-  if (duplicate) {
-    showToast("⚠️ Ce terme existe déjà.");
-    return;
-  }
+  if (duplicate) { showToast("⚠️ Ce terme existe déjà."); return; }
 
   const example = document.getElementById("formExample")?.value.trim() || "";
   const remember = document.getElementById("formRemember")?.value.trim() || "";
 
+  const newDef = normalizeDefinition({ id: nextId(), term, matiere, def, example, remember });
+  definitions.push(newDef);
+
   try {
     showToast("⏳ Sauvegarde...");
-    const result = await apiPost('/api/definitions', {
-      term, matiere, def, example, remember
-    });
-    
-    definitions.push(normalizeDefinition(result));
-    clearCache('defs');
-    render();
+    await saveDefinitionsRemote();
     renderAdminList();
     clearDefinitionForm();
     showToast("✅ Définition ajoutée !");
   } catch (error) {
-    console.error(error);
+    definitions = definitions.filter(d => d.id !== newDef.id);
     showToast("⚠️ " + (error.message || "Erreur de sauvegarde."));
   }
 }
@@ -748,7 +648,6 @@ function editDefinition(id) {
   const def = document.getElementById("formDef");
   const example = document.getElementById("formExample");
   const remember = document.getElementById("formRemember");
-
   if (term) term.value = d.term;
   if (matiere) matiere.value = d.matiere;
   if (def) def.value = d.def;
@@ -760,27 +659,22 @@ function editDefinition(id) {
   const btnFormAction = document.getElementById("btnFormAction");
   const btnCancelEdit = document.getElementById("btnCancelEdit");
   const formTitle = document.getElementById("formTitle");
-
   if (btnFormAction) btnFormAction.textContent = "💾 Enregistrer les modifications";
   if (btnCancelEdit) btnCancelEdit.style.display = "block";
   if (formTitle) formTitle.textContent = "Modifier la définition";
 
   showToast("✏️ Modification en cours");
-
-  const admin = document.querySelector(".admin-panel");
-  if (admin) admin.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function saveEditedDefinition() {
   const id = editingDefinitionId;
-  if (!id) {
-    await addDefinition();
-    return;
-  }
+  if (!id) { await addDefinition(); return; }
 
   const d = definitions.find(x => Number(x.id) === Number(id));
   if (!d) return;
 
+  const backup = { ...d };
   d.term = document.getElementById("formTerm")?.value.trim();
   d.matiere = document.getElementById("formMatiere")?.value;
   d.def = document.getElementById("formDef")?.value.trim();
@@ -788,72 +682,54 @@ async function saveEditedDefinition() {
   d.remember = document.getElementById("formRemember")?.value.trim() || "";
 
   try {
-    await apiPut(`/api/definitions/${id}`, d);
-    clearCache('defs');
+    await saveDefinitionsRemote();
+    editingDefinitionId = null;
+    clearDefinitionForm();
+    const btnFormAction = document.getElementById("btnFormAction");
+    const btnCancelEdit = document.getElementById("btnCancelEdit");
+    const formTitle = document.getElementById("formTitle");
+    if (btnFormAction) btnFormAction.textContent = "+ Ajouter la définition";
+    if (btnCancelEdit) btnCancelEdit.style.display = "none";
+    if (formTitle) formTitle.textContent = "Ajouter une définition";
+    renderAdminList();
+    showToast("✅ Définition modifiée !");
   } catch (e) {
-    console.error(e);
+    Object.assign(d, backup);
+    showToast("⚠️ " + (e.message || "Erreur de sauvegarde."));
   }
-
-  editingDefinitionId = null;
-  clearDefinitionForm();
-
-  const btnFormAction = document.getElementById("btnFormAction");
-  const btnCancelEdit = document.getElementById("btnCancelEdit");
-  const formTitle = document.getElementById("formTitle");
-
-  if (btnFormAction) btnFormAction.textContent = "+ Ajouter la définition";
-  if (btnCancelEdit) btnCancelEdit.style.display = "none";
-  if (formTitle) formTitle.textContent = "Ajouter une définition";
-
-  render();
-  renderAdminList();
-  showToast("✅ Définition modifiée !");
 }
 
-/* ============================================================
-   SUPPRESSION
-   ============================================================ */
 async function deleteDefinition(id) {
   if (!confirm("Supprimer cette définition ?")) return;
 
+  const backup = [...definitions];
   definitions = definitions.filter(d => Number(d.id) !== Number(id));
-  favorites = favorites.filter(x => Number(x) !== Number(id));
-  localStorage.setItem("lexiprof_favorites", JSON.stringify(favorites));
 
   try {
-    await apiDelete(`/api/definitions/${id}`);
-    clearCache('defs');
-    render();
+    await saveDefinitionsRemote();
     renderAdminList();
     showToast("🗑 Définition supprimée.");
   } catch (error) {
-    console.error(error);
+    definitions = backup;
     showToast("⚠️ Erreur de sauvegarde.");
   }
 }
 
 /* ============================================================
-   MOT DE PASSE
+   ADMIN — MOT DE PASSE
    ============================================================ */
 function toggleChangePwd() {
-  const form = document.getElementById("changePwdForm");
-  if (form) form.classList.toggle("open");
+  document.getElementById("changePwdForm")?.classList.toggle("open");
 }
 
 function changePassword() {
   const p1 = document.getElementById("newPwd1")?.value;
   const p2 = document.getElementById("newPwd2")?.value;
 
-  if (!p1 || p1.length < 4) {
-    showToast("⚠️ Minimum 4 caractères.");
-    return;
-  }
-  if (p1 !== p2) {
-    showToast("⚠️ Les mots de passe ne correspondent pas.");
-    return;
-  }
+  if (!p1 || p1.length < 4) { showToast("⚠️ Minimum 4 caractères."); return; }
+  if (p1 !== p2) { showToast("⚠️ Les mots de passe ne correspondent pas."); return; }
 
-  localStorage.setItem(PWD_KEY, p1);
+  setAdminPassword(p1);
   document.getElementById("newPwd1").value = "";
   document.getElementById("newPwd2").value = "";
   document.getElementById("changePwdForm")?.classList.remove("open");
@@ -861,87 +737,208 @@ function changePassword() {
 }
 
 /* ============================================================
-   IMPORT / EXPORT JSON
+   ADMIN — IMPORT / EXPORT JSON
    ============================================================ */
 function importJson() {
   const input = document.getElementById("jsonImport");
-  if (!input || !input.files || !input.files[0]) {
-    showToast("⚠️ Sélectionne un fichier JSON.");
-    return;
-  }
-  handleJSONImportFile(input.files[0]);
-  input.value = "";
-}
-
-function handleJSONImportFile(file) {
+  if (!input || !input.files || !input.files[0]) { showToast("⚠️ Sélectionne un fichier JSON."); return; }
   const reader = new FileReader();
   reader.onload = async e => {
     try {
       const parsed = JSON.parse(e.target.result);
       await processImport(parsed);
     } catch (error) {
-      console.error(error);
       showToast("❌ JSON invalide.");
     }
   };
-  reader.readAsText(file);
+  reader.readAsText(input.files[0]);
+  input.value = "";
 }
 
 function handleJSONImport() {
   const textarea = document.getElementById("jsonPaste");
   if (!textarea) return;
   const text = textarea.value.trim();
-  if (!text) {
-    showToast("⚠️ Colle d'abord ton JSON.");
-    return;
-  }
+  if (!text) { showToast("⚠️ Colle d'abord ton JSON."); return; }
   try {
     const parsed = JSON.parse(text);
     processImport(parsed).then(() => { textarea.value = ""; });
   } catch (error) {
-    console.error(error);
     showToast("❌ JSON invalide ou mauvais format.");
   }
 }
 
 async function processImport(parsed) {
   const imported = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.definitions) ? parsed.definitions : []);
-  if (!imported.length) throw new Error("Aucune définition trouvée.");
+  if (!imported.length) { showToast("⚠️ Aucune définition trouvée."); return; }
+
+  const backup = [...definitions];
+  let maxId = definitions.length ? Math.max(...definitions.map(d => Number(d.id) || 0)) : 0;
+  imported.forEach((d) => {
+    maxId += 1;
+    definitions.push(normalizeDefinition({ ...d, id: maxId }));
+  });
 
   try {
-    showToast("⏳ Import en cours...");
-    const result = await apiPost('/api/definitions/import', { definitions: imported });
-    clearCache('defs');
-    await load();
+    await saveDefinitionsRemote();
     renderAdminList();
-    showToast(`✅ ${result.added} définition${result.added !== 1 ? "s" : ""} importée${result.added !== 1 ? "s" : ""}`);
+    showToast(`✅ ${imported.length} définition(s) importée(s)`);
   } catch (e) {
+    definitions = backup;
     showToast("⚠️ " + (e.message || "Erreur d'import."));
   }
 }
 
-async function exportJson() {
+function exportJson() {
+  const blob = new Blob([JSON.stringify(definitions, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "lexiprof-definitions.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("📦 JSON exporté !");
+}
+
+/* ============================================================
+   ADMIN — PROPOSITIONS EN ATTENTE
+   ============================================================ */
+async function loadProposalsList() {
   try {
-    const data = await apiGet('/api/definitions/export');
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "lexiprof-definitions.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("📦 JSON exporté !");
+    proposalsCache = await fetchProposalsRemote();
   } catch (e) {
-    // Fallback local
-    const blob = new Blob([JSON.stringify(definitions, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "lexiprof-definitions.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("📦 JSON exporté (local) !");
+    proposalsCache = [];
+    console.warn("Propositions indisponibles:", e.message);
   }
+  renderProposalsList();
+}
+
+function renderProposalsList() {
+  const list = document.getElementById("proposalsList");
+  const badge = document.getElementById("proposalsCount");
+  if (!list) return;
+
+  const pending = proposalsCache.filter(p => p.status === "pending");
+
+  if (badge) {
+    if (pending.length) {
+      badge.style.display = "inline-flex";
+      badge.textContent = pending.length;
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  if (!pending.length) {
+    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucune proposition en attente.</p>`;
+    return;
+  }
+
+  list.innerHTML = pending.map(p => `
+    <div class="admin-item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div>
+          <div class="admin-item-term">${escapeHTML(p.term)}</div>
+          <div class="admin-item-meta">${escapeHTML(p.matiere)}${p.pseudo ? " · " + escapeHTML(p.pseudo) : ""}</div>
+        </div>
+        <div class="admin-item-actions">
+          <button class="btn-approve" onclick="approveProposal(${p.id})" title="Approuver">✓</button>
+          <button class="btn-reject" onclick="rejectProposal(${p.id})" title="Refuser">✕</button>
+        </div>
+      </div>
+      <p class="proposal-item-def">${escapeHTML(p.def)}</p>
+    </div>
+  `).join("");
+}
+
+async function approveProposal(id) {
+  const p = proposalsCache.find(x => Number(x.id) === Number(id));
+  if (!p) return;
+
+  const newDef = normalizeDefinition({
+    id: nextId(), term: p.term, matiere: p.matiere, def: p.def, example: p.example || "", remember: p.remember || ""
+  });
+  definitions.push(newDef);
+
+  const backupProposals = [...proposalsCache];
+  try {
+    await saveDefinitionsRemote();
+    proposalsCache = proposalsCache.filter(x => Number(x.id) !== Number(id));
+    await saveProposalsRemote(proposalsCache);
+    renderAdminList();
+    renderProposalsList();
+    showToast("✅ Définition ajoutée !");
+  } catch (e) {
+    definitions = definitions.filter(d => d.id !== newDef.id);
+    proposalsCache = backupProposals;
+    showToast("⚠️ " + (e.message || "Erreur."));
+  }
+}
+
+async function rejectProposal(id) {
+  const backup = [...proposalsCache];
+  proposalsCache = proposalsCache.filter(x => Number(x.id) !== Number(id));
+  try {
+    await saveProposalsRemote(proposalsCache);
+    renderProposalsList();
+    showToast("🗑 Proposition refusée.");
+  } catch (e) {
+    proposalsCache = backup;
+    showToast("⚠️ Erreur de sauvegarde.");
+  }
+}
+
+/* ============================================================
+   PAGE PROPOSER (propose.html)
+   ============================================================ */
+async function handleProposalSubmit() {
+  const honeypot = document.getElementById("pWebsite")?.value;
+  if (honeypot) {
+    showProposalSuccess();
+    return;
+  }
+
+  const term = document.getElementById("pTerm")?.value.trim();
+  const matiere = document.getElementById("pMatiere")?.value;
+  const def = document.getElementById("pDef")?.value.trim();
+
+  if (!term || !def) { showToast("⚠️ Remplis au moins le terme et la définition."); return; }
+
+  const proposal = {
+    term, matiere, def,
+    example: document.getElementById("pExample")?.value.trim() || "",
+    remember: document.getElementById("pRemember")?.value.trim() || "",
+    pseudo: document.getElementById("pPseudo")?.value.trim() || "",
+    email: document.getElementById("pEmail")?.value.trim() || ""
+  };
+
+  try {
+    showToast("⏳ Envoi...");
+    await submitProposalRemote(proposal);
+    showProposalSuccess();
+  } catch (e) {
+    showToast("⚠️ " + (e.message || "Erreur d'envoi."));
+  }
+}
+
+function showProposalSuccess() {
+  const formSection = document.getElementById("proposeFormSection");
+  const successSection = document.getElementById("proposeSuccessSection");
+  if (formSection) formSection.style.display = "none";
+  if (successSection) successSection.style.display = "block";
+}
+
+function resetProposalForm() {
+  ["pTerm", "pDef", "pExample", "pRemember", "pPseudo", "pEmail", "pWebsite"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  const matiere = document.getElementById("pMatiere");
+  if (matiere) matiere.value = "Management";
+  const successSection = document.getElementById("proposeSuccessSection");
+  const formSection = document.getElementById("proposeFormSection");
+  if (successSection) successSection.style.display = "none";
+  if (formSection) formSection.style.display = "block";
 }
 
 /* ============================================================
@@ -949,10 +946,7 @@ async function exportJson() {
    ============================================================ */
 function openFlashcards() {
   flashcardList = getFilteredDefinitions();
-  if (!flashcardList.length) {
-    showToast("⚠️ Aucune définition disponible.");
-    return;
-  }
+  if (!flashcardList.length) { showToast("⚠️ Aucune définition disponible."); return; }
   currentFlashcardIndex = 0;
   renderFlashcard();
 }
@@ -960,7 +954,6 @@ function openFlashcards() {
 function renderFlashcard() {
   const d = flashcardList[currentFlashcardIndex];
   if (!d) return;
-
   const overlay = document.getElementById("flashcardOverlay");
   if (!overlay) return;
 
@@ -969,18 +962,11 @@ function renderFlashcard() {
   const def = document.getElementById("flashcardDef");
   const counter = document.getElementById("flashcardCounter");
   const reveal = document.getElementById("flashcardReveal");
-
   if (meta) meta.textContent = d.matiere;
   if (term) term.textContent = d.term;
-  if (def) {
-    def.textContent = d.def;
-    def.style.display = "none";
-  }
+  if (def) { def.textContent = d.def; def.style.display = "none"; }
   if (counter) counter.textContent = `${currentFlashcardIndex + 1} / ${flashcardList.length}`;
-  if (reveal) {
-    reveal.style.display = "block";
-    reveal.textContent = "Cliquez pour révéler";
-  }
+  if (reveal) { reveal.style.display = "block"; reveal.textContent = "Cliquez pour révéler"; }
 
   overlay.classList.add("open");
 }
@@ -1008,29 +994,23 @@ function prevFlashcard() {
 
 function closeFlashcard(e) {
   if (e && e.target !== e.currentTarget) return;
-  const overlay = document.getElementById("flashcardOverlay");
-  if (overlay) overlay.classList.remove("open");
+  document.getElementById("flashcardOverlay")?.classList.remove("open");
 }
 
 /* ============================================================
    DÉFINITION ALÉATOIRE
    ============================================================ */
 function showRandomDefinition() {
-  if (!definitions.length) {
-    showToast("⚠️ Aucune définition.");
-    return;
-  }
+  if (!definitions.length) { showToast("⚠️ Aucune définition."); return; }
+  const modal = document.getElementById("randomModal");
+  if (!modal) return;
 
   const d = definitions[Math.floor(Math.random() * definitions.length)];
   currentRandomId = d.id;
 
-  const modal = document.getElementById("randomModal");
-  if (!modal) return;
-
   const matiere = document.getElementById("randomMatiere");
   const term = document.getElementById("randomTerm");
   const def = document.getElementById("randomDef");
-
   if (matiere) matiere.textContent = d.matiere;
   if (term) term.textContent = d.term;
   if (def) def.textContent = d.def;
@@ -1051,8 +1031,7 @@ function openRandomDefinition() {
 }
 
 function closeRandomModal() {
-  const modal = document.getElementById("randomModal");
-  if (modal) modal.classList.remove("open");
+  document.getElementById("randomModal")?.classList.remove("open");
 }
 
 /* ============================================================
@@ -1066,14 +1045,10 @@ function showToast(message) {
     toast.className = "toast";
     document.body.appendChild(toast);
   }
-
   toast.textContent = message;
   toast.classList.add("show");
-
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2500);
+  toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
 /* ============================================================
@@ -1081,19 +1056,16 @@ function showToast(message) {
    ============================================================ */
 function initKeyboardShortcuts() {
   document.addEventListener("keydown", e => {
-    if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+    const tag = document.activeElement.tagName;
+    if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
       e.preventDefault();
       document.getElementById("searchInput")?.focus();
     }
-
-    if (e.key.toLowerCase() === "r" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+    if (e.key.toLowerCase() === "r" && tag !== "INPUT" && tag !== "TEXTAREA") {
       e.preventDefault();
       showRandomDefinition();
     }
-
     if (e.key === "Escape") {
-      closePwdModal();
-      closeAdmin();
       closeFlashcard();
       closeRandomModal();
       closeAuthModal();
@@ -1110,16 +1082,13 @@ function initKeyboardShortcuts() {
    SCROLL EFFECTS
    ============================================================ */
 function initScrollEffects() {
-  const scrollTop = document.getElementById("scrollTop");
+  const scrollTopBtn = document.getElementById("scrollTop");
   const progress = document.getElementById("readingProgress");
+  if (!scrollTopBtn && !progress) return;
 
   window.addEventListener("scroll", () => {
     const scroll = window.scrollY;
-
-    if (scrollTop) {
-      scrollTop.classList.toggle("visible", scroll > 400);
-    }
-
+    if (scrollTopBtn) scrollTopBtn.classList.toggle("visible", scroll > 400);
     if (progress) {
       const height = document.documentElement.scrollHeight - window.innerHeight;
       const percentage = height > 0 ? (scroll / height) * 100 : 0;
@@ -1135,15 +1104,10 @@ function initInstallPrompt() {
   window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault();
     deferredInstallPrompt = e;
-
-    const button = document.getElementById("installAppBtn");
-    if (button) button.classList.add("visible");
+    document.getElementById("installAppBtn")?.classList.add("visible");
   });
-
   const installBtn = document.getElementById("installAppBtn");
-  if (installBtn) {
-    installBtn.addEventListener("click", installApp);
-  }
+  if (installBtn) installBtn.addEventListener("click", installApp);
 }
 
 async function installApp() {
@@ -1151,47 +1115,37 @@ async function installApp() {
     showToast("ℹ️ Utilise le menu Partager de ton navigateur pour ajouter LexiProf.");
     return;
   }
-
   deferredInstallPrompt.prompt();
   const result = await deferredInstallPrompt.userChoice;
-
-  if (result.outcome === "accepted") {
-    showToast("✅ LexiProf ajouté à l'écran d'accueil !");
-  }
-
+  if (result.outcome === "accepted") showToast("✅ LexiProf ajouté à l'écran d'accueil !");
   deferredInstallPrompt = null;
-  const button = document.getElementById("installAppBtn");
-  if (button) button.classList.remove("visible");
+  document.getElementById("installAppBtn")?.classList.remove("visible");
 }
 
 /* ============================================================
    BIENVENUE
    ============================================================ */
 function closeWelcome() {
-  const banner = document.getElementById("welcomeBanner");
-  if (banner) banner.classList.remove("show");
-  localStorage.setItem("lexiprof_welcome_seen", "true");
+  document.getElementById("welcomeBanner")?.classList.remove("show");
+  localStorage.setItem(WELCOME_SEEN_KEY, "true");
 }
 
 function initWelcome() {
-  if (localStorage.getItem("lexiprof_welcome_seen")) return;
   const banner = document.getElementById("welcomeBanner");
-  if (banner) {
-    setTimeout(() => banner.classList.add("show"), 800);
-    setTimeout(() => banner.classList.remove("show"), 6000);
-  }
+  if (!banner) return;
+  if (localStorage.getItem(WELCOME_SEEN_KEY)) return;
+  setTimeout(() => banner.classList.add("show"), 800);
+  setTimeout(() => banner.classList.remove("show"), 6000);
 }
 
 /* ============================================================
-   HERO ANIMÉ (lettres qui apparaissent)
+   HERO ANIMÉ
    ============================================================ */
 function initHeroAnimation() {
   const heroTitle = document.getElementById("heroTitle");
   if (!heroTitle) return;
-  
   const text = "Dictionnaire STMG";
   heroTitle.innerHTML = "";
-  
   text.split("").forEach((char, i) => {
     const span = document.createElement("span");
     span.textContent = char === " " ? "\u00A0" : char;
@@ -1210,17 +1164,10 @@ function initKonamiCode() {
   let konamiActive = false;
 
   document.addEventListener("keydown", e => {
-    if (konamiActive && e.key === "Escape") {
-      deactivateKonami();
-      return;
-    }
-
+    if (konamiActive && e.key === "Escape") { deactivateKonami(); return; }
     if (e.key === konamiSequence[konamiIndex]) {
       konamiIndex++;
-      if (konamiIndex === konamiSequence.length) {
-        activateKonami();
-        konamiIndex = 0;
-      }
+      if (konamiIndex === konamiSequence.length) { activateKonami(); konamiIndex = 0; }
     } else {
       konamiIndex = 0;
     }
@@ -1230,8 +1177,6 @@ function initKonamiCode() {
     konamiActive = true;
     document.body.classList.add("retro-mode");
     showToast("🎮 MODE RETRO ACTIVÉ ! Appuie sur ESC pour quitter");
-    
-    // Son 8-bit
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
@@ -1257,23 +1202,16 @@ function initKonamiCode() {
 }
 
 /* ============================================================
-   EVENT LISTENERS
+   EVENT LISTENERS COMMUNS
    ============================================================ */
 function initEventListeners() {
-  const btnFlashcard = document.getElementById("btnFlashcard");
-  if (btnFlashcard) btnFlashcard.addEventListener("click", openFlashcards);
-
-  const themeToggle = document.getElementById("themeToggle");
-  if (themeToggle) themeToggle.addEventListener("click", toggleTheme);
-
-  const btnFocus = document.getElementById("btnFocusMode");
-  if (btnFocus) btnFocus.addEventListener("click", toggleFocusMode);
+  document.getElementById("btnFlashcard")?.addEventListener("click", openFlashcards);
+  document.getElementById("themeToggle")?.addEventListener("click", toggleTheme);
+  document.getElementById("btnFocusMode")?.addEventListener("click", toggleFocusMode);
 
   const randomModal = document.getElementById("randomModal");
   if (randomModal) {
-    randomModal.addEventListener("click", e => {
-      if (e.target === randomModal) closeRandomModal();
-    });
+    randomModal.addEventListener("click", e => { if (e.target === randomModal) closeRandomModal(); });
   }
 }
 
@@ -1284,18 +1222,23 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initHeroAnimation();
   initKonamiCode();
-  load();
   initKeyboardShortcuts();
   initScrollEffects();
   initInstallPrompt();
   initWelcome();
   initEventListeners();
   renderSearchHistory();
-  updateAuthUI();
-  checkHash();
+
+  if (document.getElementById("cardsContainer")) {
+    loadAndRenderApp();
+    checkHash();
+  } else {
+    hideLoader();
+  }
+
+  if (document.getElementById("pwdGate")) {
+    initAdminPage();
+  }
 });
 
-/* ============================================================
-   FIN
-   ============================================================ */
-console.log("📚 LexiProf v8 — app.js chargé");
+console.log("📚 LexiProf v9 — app.js chargé");
