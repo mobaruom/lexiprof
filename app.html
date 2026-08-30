@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang='fr'>
+
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta name='theme-color' content='#f7f5f0'>
+  <meta name='description' content='LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
+
+  <link rel='manifest' href='manifest.json'>
+  <title>Dictionnaire — LexiProf</title>
+  <link rel='stylesheet' href='css/style.css?v=9'>
+
+  <link
+    href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
+    rel='stylesheet'
+  >
+</head>
+
+<body>
+  <!-- LOADER -->
+  <div class='global-loader' id='globalLoader'>
+    <img src='icons/IMG_6870.png' alt='LexiProf' class='loader-logo-img'>
+    <div class='loader-bar'><span></span></div>
+    <p>Chargement de LexiProf...</p>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class='logo'>
+      <a href='index.html' style='display:flex;align-items:baseline;gap:6px'>
+        <span class='logo-main'>LexiProf</span>
+        <span class='logo-tag'>· STMG</span>
+      </a>
+    </div>
+
+    <div class='header-actions'>
+      <button class='btn-icon' id='btnRandom' onclick='showRandomDefinition()' title='Définition aléatoire' aria-label='Définition aléatoire'>🎲</button>
+      <button class='btn-icon' id='btnFocusMode' title='Mode Focus' aria-label='Mode Focus'>🎯</button>
+      <button class='btn-icon' id='btnFlashcard' title='Mode Flashcard' aria-label='Mode Flashcard'>📚</button>
+      <button class='btn-icon' id='themeToggle' title='Mode sombre / clair' aria-label='Changer de thème'>🌙</button>
+      <a class='btn-admin' href='propose.html'>
+        ✍️ <span class='btn-admin-text'>Proposer</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- HERO ANIMÉ -->
+    <section class='hero'>
+      <h1 id='heroTitle'></h1>
+      <p>Retrouve toutes les définitions de Management, Droit, Économie et RH</p>
+
+      <div class='search-wrap'>
+        <svg class='search-icon' width='17' height='17' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'>
+          <circle cx='11' cy='11' r='8'/>
+          <path d='m21 21-4.35-4.35'/>
+        </svg>
+
+        <input type='text' id='searchInput' placeholder='Rechercher un terme...' autocomplete='off' oninput='onSearch()'>
+
+        <button class='search-clear' id='searchClear' onclick='clearSearch()' aria-label='Effacer'>×</button>
+      </div>
+
+      <div class='search-history' id='searchHistory'></div>
+      <div class='definition-counter' id='defCounter'></div>
+    </section>
+
+    <!-- FILTRES DROPDOWN -->
+    <nav class='filters-dropdown' aria-label='Filtres'>
+      <div class='filter-dropdown-wrap'>
+        <button class='filter-dropdown-btn' id='filterDropdownBtn' onclick='toggleFilterDropdown()'>
+          <span class='filter-dropdown-dot' id='filterDropdownDot'></span>
+          <span id='filterDropdownLabel'>Toutes les matières</span>
+          <svg class='filter-dropdown-arrow' width='12' height='12' viewBox='0 0 12 12' fill='none'>
+            <path d='M2.5 4.5L6 8L9.5 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/>
+          </svg>
+        </button>
+        <div class='filter-dropdown-menu' id='filterDropdownMenu'>
+          <button class='filter-dropdown-item active' data-filter='all' onclick='setFilterFromDropdown("all", this)'>
+            <span class='filter-dot' style='background:var(--text)'></span>Toutes les matières
+          </button>
+          <button class='filter-dropdown-item' data-filter='Management' onclick='setFilterFromDropdown("Management", this)'>
+            <span class='filter-dot' style='background:var(--mgt)'></span>Management
+          </button>
+          <button class='filter-dropdown-item' data-filter='Droit' onclick='setFilterFromDropdown("Droit", this)'>
+            <span class='filter-dot' style='background:var(--drt)'></span>Droit
+          </button>
+          <button class='filter-dropdown-item' data-filter='Économie' onclick='setFilterFromDropdown("Économie", this)'>
+            <span class='filter-dot' style='background:var(--eco)'></span>Économie
+          </button>
+          <button class='filter-dropdown-item' data-filter='RH' onclick='setFilterFromDropdown("RH", this)'>
+            <span class='filter-dot' style='background:var(--rh)'></span>RH
+          </button>
+          <div class='filter-dropdown-divider'></div>
+          <button class='filter-dropdown-item filter-dropdown-fav' data-filter='favorites' onclick='setFilterFromDropdown("favorites", this)'>
+            <span class='filter-fav-star'>★</span>Mes favoris
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- RESULTS -->
+    <div class='results-info' id='resultsInfo'></div>
+
+    <!-- SKELETON LOADING -->
+    <div class='skeleton-container' id='skeletonContainer' style='display:none'>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+      <div class='skeleton-card'><div class='skeleton-badge'></div><div class='skeleton-title'></div><div class='skeleton-text'></div><div class='skeleton-text short'></div></div>
+    </div>
+
+    <!-- CARTES -->
+    <section class='cards' id='cardsContainer' aria-live='polite'></section>
+
+    <!-- SENTINELLE SCROLL INFINI -->
+    <div class='scroll-sentinel' id='scrollSentinel'></div>
+  </main>
+
+  <!-- SCROLL TOP -->
+  <button class='scroll-top' id='scrollTop' onclick='window.scrollTo({top:0,behavior:"smooth"})' title='Remonter en haut' aria-label='Remonter en haut'>↑</button>
+
+  <!-- BARRE DE PROGRESSION -->
+  <div class='reading-progress' id='readingProgress'></div>
+
+  <!-- FLASHCARD OVERLAY -->
+  <div class='overlay' id='flashcardOverlay' onclick='closeFlashcard(event)'>
+    <div class='flashcard-modal' onclick='event.stopPropagation()'>
+      <div class='flashcard-header'>
+        <span class='flashcard-counter' id='flashcardCounter'>1 / 1</span>
+        <button class='btn-close' onclick='closeFlashcard()'>×</button>
+      </div>
+      <div class='flashcard-body' id='flashcardBody' onclick='revealFlashcard()'>
+        <div class='flashcard-matiere' id='flashcardMeta'>Management</div>
+        <div class='flashcard-term' id='flashcardTerm'>Terme</div>
+        <div class='flashcard-reveal' id='flashcardReveal'>Cliquez pour révéler</div>
+        <div class='flashcard-def' id='flashcardDef' style='display:none'>Définition</div>
+      </div>
+      <div class='flashcard-actions'>
+        <button class='flashcard-btn' onclick='prevFlashcard()'>← Précédent</button>
+        <button class='flashcard-btn primary' onclick='nextFlashcard()'>Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DÉFINITION ALÉATOIRE -->
+  <div class='random-modal' id='randomModal'>
+    <div class='random-modal-card'>
+      <button class='random-close' onclick='closeRandomModal()' aria-label='Fermer'>×</button>
+      <span class='random-label'>🎲 DÉFINITION ALÉATOIRE</span>
+      <div class='random-matiere' id='randomMatiere'></div>
+      <h2 id='randomTerm'></h2>
+      <p id='randomDef'></p>
+      <div class='random-actions'>
+        <button onclick='openRandomDefinition()'>📖 Ouvrir la fiche</button>
+        <button class='secondary' onclick='showRandomDefinition()'>🎲 Une autre</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTALLATION -->
+  <button class='install-app-btn' id='installAppBtn' type='button'>
+    <span>📱</span>
+    <span>Installer LexiProf</span>
+  </button>
+
+  <!-- RACCOURCIS -->
+  <div class='keyboard-hint' id='keyboardHint'>
+    <kbd>/</kbd> rechercher
+    <kbd>R</kbd> aléatoire
+    <kbd>Esc</kbd> fermer
+  </div>
+
+  <!-- TOAST -->
+  <div class='toast' id='toast' role='status' aria-live='polite'></div>
+
+  <!-- FOOTER -->
+  <footer>
+    <strong>LexiProf</strong>
+    <span>· Dictionnaire STMG</span>
+    <br>
+    <small><a href='admin.html'>Admin</a> · <a href='propose.html'>Proposer une définition</a></small>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src='js/config.js?v=9'></script>
+  <script src='js/storage.js?v=9'></script>
+  <script src='js/app.js?v=9'></script>
+</body>
+
+</html>
