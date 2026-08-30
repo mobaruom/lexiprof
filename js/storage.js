@@ -18,7 +18,10 @@ async function apiGet(binId) {
   const res = await fetch(`${API_BASE_URL}/b/${binId}/latest`, { headers: getHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  return Array.isArray(data.record) ? data.record : [];
+  const rec = data.record;
+  if (Array.isArray(rec)) return rec;
+  if (rec && Array.isArray(rec.definitions)) return rec.definitions;
+  return [];
 }
 
 async function apiPut(binId, arr) {
