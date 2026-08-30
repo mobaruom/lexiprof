@@ -59,6 +59,7 @@ function escapeHTML(value) {
 
 function normalizeDefinition(d) {
   return {
+    ...d,
     id: Number(d.id) || nextId(),
     term: String(d.term || "").trim(),
     matiere: String(d.matiere || "Management").trim(),
