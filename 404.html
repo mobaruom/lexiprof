@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang='fr'>
+
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta name='theme-color' content='#f7f5f0'>
+  <meta name='robots' content='noindex'>
+  <title>Page introuvable — LexiProf</title>
+  <link rel='stylesheet' href='css/style.css?v=9'>
+
+  <link
+    href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
+    rel='stylesheet'
+  >
+
+  <script>
+    if (localStorage.getItem("lexiprof_theme") === "dark") {
+      document.documentElement.addEventListener("DOMContentLoaded", () => {});
+      document.addEventListener("DOMContentLoaded", () => document.body.classList.add("dark"));
+    }
+  </script>
+</head>
+
+<body>
+  <header>
+    <div class='logo'>
+      <a href='index.html' style='display:flex;align-items:baseline;gap:6px'>
+        <span class='logo-main'>LexiProf</span>
+        <span class='logo-tag'>· STMG</span>
+      </a>
+    </div>
+    <div class='header-actions'>
+      <a class='btn-admin' href='app.html'>📖 <span class='btn-admin-text'>Dictionnaire</span></a>
+    </div>
+  </header>
+
+  <main style='display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 64px - 90px);text-align:center;gap:6px;padding:40px 16px'>
+
+    <script type='module' src='https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs'></script>
+    <dotlottie-player
+      src='https://lottie.host/5dae8bc0-7bc9-4c8b-8d34-709e3d136c33/KtddCl2eSS.lottie'
+      background='transparent'
+      speed='1'
+      style='width:220px;height:220px'
+      loop
+      autoplay
+    ></dotlottie-player>
+
+    <div>
+      <h1 style="font-family:'Lora',serif;font-size:26px;margin-bottom:8px">Page introuvable</h1>
+      <p style='color:var(--text-muted);font-size:14px;max-width:320px;margin:0 auto 22px;line-height:1.6'>
+        Cette page n'existe pas ou a été déplacée. Retourne au dictionnaire pour continuer à réviser.
+      </p>
+      <a class='btn-add' href='index.html' style='display:inline-block;width:auto;padding:11px 24px'>← Retour à l'accueil</a>
+    </div>
+  </main>
+
+  <footer>
+    <strong>LexiProf</strong>
+    <span>· Dictionnaire STMG</span>
+  </footer>
+</body>
+
+</html>
