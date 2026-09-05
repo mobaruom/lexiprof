@@ -1,19 +1,11 @@
 /* ============================================================
    LEXIPROF — CONFIG
    Version 100% statique (GitHub Pages), sans backend.
-   La clé JSONBin est volontairement en clair ici — choix
-   assumé de simplicité. Elle donne accès à TOUT le compte
-   JSONBin : si ce dépôt est public, n'importe qui peut la lire.
+   Base de données : Firebase Realtime Database, règles publiques
+   (.read/.write: true) — aucune clé à gérer côté client.
    ============================================================ */
 
-const API_BASE_URL = "https://api.jsonbin.io/v3";
-const JSONBIN_MASTER_KEY = "$2a$10$tx0/pK3Ectrq62JFXLCB2.ryWt0rEN01imbo4H6g2ZhoBYsKiJtyi";
-
-// ID de ton bin JSONBin existant (definitions)
-const JSONBIN_BIN_ID = "69f31bf4aaba882197556e92";
-
-// ID du bin des propositions
-const JSONBIN_PROPOSALS_BIN_ID = "6a9440b9da38895dfe232e15";
+const FIREBASE_DB_URL = "https://lexiprof-44e50-default-rtdb.firebaseio.com";
 
 // Mot de passe admin local (protection visuelle uniquement, pas une vraie sécurité)
 const PWD_KEY = "lexiprof_admin_pwd";
