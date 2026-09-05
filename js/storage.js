@@ -1,42 +1,35 @@
 /* ============================================================
    LEXIPROF — STORAGE.JS
-   Appels directs à JSONBin (pas de backend), cache local,
-   favoris locaux, mot de passe admin local, propositions.
+   Appels directs à Firebase Realtime Database (pas de backend,
+   pas de clé — règles publiques), cache local, favoris locaux,
+   mot de passe admin local, propositions.
    ============================================================ */
 
 // ============================================================
-// APPELS JSONBIN
+// APPELS FIREBASE REALTIME DATABASE
 // ============================================================
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Master-Key": JSONBIN_MASTER_KEY
-  };
-}
-
-async function apiGet(binId) {
-  const res = await fetch(`${API_BASE_URL}/b/${binId}/latest`, { headers: getHeaders() });
+async function apiGet(path) {
+  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
   if (!res.ok) {
     let detail = "";
-    try { const body = await res.json(); detail = body.message || ""; } catch (e) {}
+    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
     throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
   }
   const data = await res.json();
-  const rec = data.record;
-  if (Array.isArray(rec)) return rec;
-  if (rec && Array.isArray(rec.definitions)) return rec.definitions;
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.definitions)) return data.definitions;
   return [];
 }
 
-async function apiPut(binId, arr) {
-  const res = await fetch(`${API_BASE_URL}/b/${binId}`, {
+async function apiPut(path, arr) {
+  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
     method: "PUT",
-    headers: getHeaders(),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(arr)
   });
   if (!res.ok) {
     let detail = "";
-    try { const body = await res.json(); detail = body.message || ""; } catch (e) {}
+    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
     throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
   }
   return res.json();
@@ -83,13 +76,13 @@ async function loadRemote() {
   }
 
   try {
-    const data = await apiGet(JSONBIN_BIN_ID);
+    const data = await apiGet("definitions");
     definitions = data.map(normalizeDefinition);
     setCache(cacheKey, definitions, CACHE_CONFIG.definitions_ttl);
     localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
     return true;
   } catch (error) {
-    console.warn("⚠️ JSONBin indisponible:", error.message);
+    console.warn("⚠️ Firebase indisponible:", error.message);
     try {
       const stored = localStorage.getItem(FALLBACK_KEY);
       if (stored) {
@@ -106,7 +99,7 @@ async function loadRemote() {
 }
 
 async function saveDefinitionsRemote() {
-  await apiPut(JSONBIN_BIN_ID, definitions);
+  await apiPut("definitions", definitions);
   clearCache("defs");
   localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
 }
@@ -116,7 +109,7 @@ async function saveDefinitionsRemote() {
 // ============================================================
 async function submitProposalRemote(proposal) {
   let current = [];
-  try { current = await apiGet(JSONBIN_PROPOSALS_BIN_ID); } catch (e) { current = []; }
+  try { current = await apiGet("proposals"); } catch (e) { current = []; }
   const nextPid = current.length ? Math.max(...current.map(p => Number(p.id) || 0)) + 1 : 1;
   const entry = {
     id: nextPid,
@@ -131,16 +124,16 @@ async function submitProposalRemote(proposal) {
     createdAt: new Date().toISOString()
   };
   current.push(entry);
-  await apiPut(JSONBIN_PROPOSALS_BIN_ID, current);
+  await apiPut("proposals", current);
   return entry;
 }
 
 async function fetchProposalsRemote() {
-  return apiGet(JSONBIN_PROPOSALS_BIN_ID);
+  return apiGet("proposals");
 }
 
 async function saveProposalsRemote(fullArray) {
-  return apiPut(JSONBIN_PROPOSALS_BIN_ID, fullArray);
+  return apiPut("proposals", fullArray);
 }
 
 // ============================================================
