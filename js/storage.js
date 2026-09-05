@@ -16,7 +16,11 @@ function getHeaders() {
 
 async function apiGet(binId) {
   const res = await fetch(`${API_BASE_URL}/b/${binId}/latest`, { headers: getHeaders() });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    let detail = "";
+    try { const body = await res.json(); detail = body.message || ""; } catch (e) {}
+    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
+  }
   const data = await res.json();
   const rec = data.record;
   if (Array.isArray(rec)) return rec;
@@ -30,7 +34,11 @@ async function apiPut(binId, arr) {
     headers: getHeaders(),
     body: JSON.stringify(arr)
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    let detail = "";
+    try { const body = await res.json(); detail = body.message || ""; } catch (e) {}
+    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
+  }
   return res.json();
 }
 
