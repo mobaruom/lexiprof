@@ -716,6 +716,30 @@ async function deleteDefinition(id) {
   }
 }
 
+async function deleteAllDefinitions() {
+  if (!definitions.length) { showToast("⚠️ Aucune définition à supprimer."); return; }
+
+  const confirmation = prompt(
+    `⚠️ Ceci va supprimer DÉFINITIVEMENT les ${definitions.length} définitions du site.\nTape SUPPRIMER (en majuscules) pour confirmer.`
+  );
+  if (confirmation !== "SUPPRIMER") {
+    showToast("❌ Suppression annulée.");
+    return;
+  }
+
+  const backup = [...definitions];
+  definitions = [];
+
+  try {
+    await saveDefinitionsRemote();
+    renderAdminList();
+    showToast("🗑 Toutes les définitions ont été supprimées.");
+  } catch (e) {
+    definitions = backup;
+    showToast("⚠️ Erreur de sauvegarde : " + (e.message || "réessaie."));
+  }
+}
+
 /* ============================================================
    ADMIN — MOT DE PASSE
    ============================================================ */
