@@ -307,12 +307,8 @@ function checkHash() {
   const id = Number(hash.replace("#def=", ""));
   if (!id) return;
   setTimeout(() => {
-    const card = document.querySelector(`.card[data-id="${id}"]`);
-    if (card) {
-      card.scrollIntoView({ behavior: "smooth", block: "center" });
-      const btn = card.querySelector(".open-card-btn");
-      if (btn) toggleCard(id, btn);
-    }
+    const d = definitions.find(x => Number(x.id) === id);
+    if (d) revealDefinitionCard(id, d.term);
   }, 600);
 }
 
@@ -464,12 +460,82 @@ function updateThemeButton() {
 }
 
 /* ============================================================
-   MODE FOCUS
+   MODE FOCUS — lecteur immersif plein écran
    ============================================================ */
+let focusList = [];
+let focusIndex = 0;
+
 function toggleFocusMode() {
-  isFocusMode = !isFocusMode;
-  document.body.classList.toggle("focus-mode", isFocusMode);
-  showToast(isFocusMode ? "🎯 Mode Focus activé" : "🎯 Mode Focus désactivé");
+  focusList = getFilteredDefinitions();
+  if (!focusList.length) { showToast("⚠️ Aucune définition à afficher."); return; }
+  focusIndex = 0;
+  const overlay = document.getElementById("focusOverlay");
+  if (!overlay) return;
+  overlay.classList.add("open");
+  renderFocusCard(false);
+}
+
+function closeFocusMode() {
+  document.getElementById("focusOverlay")?.classList.remove("open");
+}
+
+function renderFocusCard(animate = true) {
+  const d = focusList[focusIndex];
+  if (!d) return;
+  const card = document.getElementById("focusCard");
+  if (!card) return;
+
+  const paint = () => {
+    document.getElementById("focusMatiere").textContent = d.matiere;
+    document.getElementById("focusMatiere").className = `focus-matiere badge-${d.matiere}`;
+    document.getElementById("focusTerm").textContent = d.term;
+    document.getElementById("focusDef").textContent = d.def;
+
+    const extraWrap = document.getElementById("focusExtra");
+    extraWrap.innerHTML = `
+      ${d.example ? `<div class="extra-block"><h4>💡 Exemple concret</h4><p>${escapeHTML(d.example)}</p></div>` : ""}
+      ${d.remember ? `<div class="extra-block"><h4>📝 À retenir</h4><p>${escapeHTML(d.remember)}</p></div>` : ""}
+    `;
+
+    document.getElementById("focusCounter").textContent = `${focusIndex + 1} / ${focusList.length}`;
+
+    const isFav = favorites.includes(Number(d.id));
+    const favBtn = document.getElementById("focusFavBtn");
+    favBtn.classList.toggle("active", isFav);
+    favBtn.querySelector(".heart-icon").textContent = isFav ? "❤️" : "🤍";
+  };
+
+  if (!animate) { paint(); return; }
+
+  card.classList.add("focus-card-out");
+  setTimeout(() => {
+    paint();
+    card.classList.remove("focus-card-out");
+    card.classList.add("focus-card-in");
+    setTimeout(() => card.classList.remove("focus-card-in"), 350);
+  }, 180);
+}
+
+function focusNext() {
+  if (!focusList.length) return;
+  focusIndex = (focusIndex + 1) % focusList.length;
+  renderFocusCard(true);
+}
+
+function focusPrev() {
+  if (!focusList.length) return;
+  focusIndex = (focusIndex - 1 + focusList.length) % focusList.length;
+  renderFocusCard(true);
+}
+
+function focusToggleFavorite() {
+  const d = focusList[focusIndex];
+  if (!d) return;
+  toggleFavorite(d.id);
+  const isFav = favorites.includes(Number(d.id));
+  const favBtn = document.getElementById("focusFavBtn");
+  favBtn.classList.toggle("active", isFav);
+  favBtn.querySelector(".heart-icon").textContent = isFav ? "❤️" : "🤍";
 }
 
 /* ============================================================
@@ -1045,13 +1111,28 @@ function showRandomDefinition() {
 
 function openRandomDefinition() {
   closeRandomModal();
-  if (currentRandomId) {
-    const card = document.querySelector(`.card[data-id="${currentRandomId}"]`);
-    if (card) {
-      card.scrollIntoView({ behavior: "smooth", block: "center" });
-      const btn = card.querySelector(".open-card-btn");
-      if (btn) toggleCard(currentRandomId, btn);
-    }
+  if (!currentRandomId) return;
+  const d = definitions.find(x => Number(x.id) === Number(currentRandomId));
+  if (!d) return;
+  revealDefinitionCard(d.id, d.term);
+}
+
+function revealDefinitionCard(id, term) {
+  let card = document.querySelector(`.card[data-id="${id}"]`);
+  if (!card) {
+    currentFilter = "all";
+    searchQuery = term;
+    const input = document.getElementById("searchInput");
+    if (input) input.value = term;
+    updateSearchClear();
+    displayedCount = 0;
+    render();
+    card = document.querySelector(`.card[data-id="${id}"]`);
+  }
+  if (card) {
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    const btn = card.querySelector(".open-card-btn");
+    if (btn) toggleCard(id, btn);
   }
 }
 
@@ -1082,6 +1163,15 @@ function showToast(message) {
 function initKeyboardShortcuts() {
   document.addEventListener("keydown", e => {
     const tag = document.activeElement.tagName;
+    const focusOpen = document.getElementById("focusOverlay")?.classList.contains("open");
+
+    if (focusOpen) {
+      if (e.key === "ArrowRight") { e.preventDefault(); focusNext(); return; }
+      if (e.key === "ArrowLeft") { e.preventDefault(); focusPrev(); return; }
+      if (e.key === "Escape") { closeFocusMode(); return; }
+      return;
+    }
+
     if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
       e.preventDefault();
       document.getElementById("searchInput")?.focus();
