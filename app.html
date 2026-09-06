@@ -126,6 +126,28 @@
   <!-- BARRE DE PROGRESSION -->
   <div class='reading-progress' id='readingProgress'></div>
 
+  <!-- MODE FOCUS — LECTEUR IMMERSIF -->
+  <div class='focus-overlay' id='focusOverlay'>
+    <div class='focus-bg'></div>
+    <button class='focus-close' onclick='closeFocusMode()' aria-label='Quitter le mode focus'>×</button>
+
+    <div class='focus-card' id='focusCard'>
+      <span class='focus-matiere' id='focusMatiere'></span>
+      <h2 class='focus-term' id='focusTerm'></h2>
+      <p class='focus-def' id='focusDef'></p>
+      <div class='focus-extra' id='focusExtra'></div>
+    </div>
+
+    <div class='focus-controls'>
+      <button class='focus-nav-btn' onclick='focusPrev()' aria-label='Précédent'>←</button>
+      <button class='card-action-btn fav-btn' id='focusFavBtn' onclick='focusToggleFavorite()' title='Favori'>
+        <span class='heart-icon'>🤍</span>
+      </button>
+      <button class='focus-nav-btn' onclick='focusNext()' aria-label='Suivant'>→</button>
+    </div>
+    <div class='focus-counter' id='focusCounter'></div>
+  </div>
+
   <!-- FLASHCARD OVERLAY -->
   <div class='overlay' id='flashcardOverlay' onclick='closeFlashcard(event)'>
     <div class='flashcard-modal' onclick='event.stopPropagation()'>
