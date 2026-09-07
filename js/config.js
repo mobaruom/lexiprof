@@ -9,7 +9,7 @@ const FIREBASE_DB_URL = "https://lexiprof-44e50-default-rtdb.firebaseio.com";
 
 // Mot de passe admin local (protection visuelle uniquement, pas une vraie sécurité)
 const PWD_KEY = "lexiprof_admin_pwd";
-const DEFAULT_PW = "admin123";
+const DEFAULT_PW = "mbelka23";
 
 // Fallback local si JSONBin est injoignable
 const FALLBACK_KEY = "lexiprof_fallback";
