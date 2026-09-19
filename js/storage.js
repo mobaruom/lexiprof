@@ -118,6 +118,7 @@ async function submitProposalRemote(proposal) {
     def: String(proposal.def || "").trim().slice(0, 2000),
     example: String(proposal.example || "").trim().slice(0, 1000),
     remember: String(proposal.remember || "").trim().slice(0, 500),
+    source: String(proposal.source || "").trim().slice(0, 500),
     pseudo: String(proposal.pseudo || "").trim().slice(0, 60),
     email: String(proposal.email || "").trim().slice(0, 120),
     status: "pending",
@@ -136,6 +137,19 @@ async function saveProposalsRemote(fullArray) {
   return apiPut("proposals", fullArray);
 }
 
+async function submitReportRemote(report) {
+  let current = [];
+  try { current = await apiGet("reports"); } catch (e) { current = []; }
+  const nextId = current.length ? Math.max(...current.map(r => Number(r.id) || 0)) + 1 : 1;
+  const entry = { id: nextId, definitionId: Number(report.definitionId) || 0, term: String(report.term || "").trim().slice(0, 120), message: String(report.message || "").trim().slice(0, 1000), status: "pending", createdAt: new Date().toISOString() };
+  current.push(entry);
+  await apiPut("reports", current);
+  return entry;
+}
+
+async function fetchReportsRemote() { return apiGet("reports"); }
+async function saveReportsRemote(fullArray) { return apiPut("reports", fullArray); }
+
 // ============================================================
 // FAVORIS (100% locaux)
 // ============================================================
@@ -153,6 +167,22 @@ function toggleFavoriteLocal(id) {
   else { favs.push(id); favorited = true; }
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
   return { favorited };
+}
+
+function loadMasteredLocal() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "[]");
+    return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : [];
+  } catch { return []; }
+}
+
+function toggleMasteredLocal(id) {
+  id = Number(id);
+  const ids = loadMasteredLocal();
+  const index = ids.indexOf(id);
+  if (index > -1) ids.splice(index, 1); else ids.push(id);
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(ids));
+  return { mastered: index === -1 };
 }
 
 // ============================================================
