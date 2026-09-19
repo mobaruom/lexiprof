@@ -10,7 +10,7 @@
 
   <link rel='manifest' href='manifest.json'>
   <title>Admin — LexiProf</title>
-  <link rel='stylesheet' href='css/style.css?v=11'>
+  <link rel='stylesheet' href='css/style.css?v=12'>
 
   <link
     href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
@@ -98,8 +98,22 @@
           <label for='formRemember'>À retenir <span>(optionnel)</span></label>
           <textarea id='formRemember' placeholder='Une phrase courte à retenir...'></textarea>
         </div>
+        <div class='form-row'>
+          <label for='formSource'>Source <span>(optionnel, lien vers une ressource fiable)</span></label>
+          <input type='url' id='formSource' placeholder='https://...'>
+        </div>
         <button class='btn-add' id='btnFormAction' onclick='handleFormAction()'>+ Ajouter la définition</button>
         <button class='btn-cancel-edit' id='btnCancelEdit' onclick='cancelEdit()' style='display:none'>Annuler la modification</button>
+      </section>
+
+      <section class='form-section'>
+        <div class='admin-list-heading' style='margin-bottom:8px'>
+          <div>
+            <h3 style='text-transform:none;font-size:13px;letter-spacing:0'>⚑ Signalements<span class='admin-badge-count' id='reportsCount' style='display:none'>0</span></h3>
+            <p>Définitions à vérifier</p>
+          </div>
+        </div>
+        <div id='reportsList' class='admin-list'></div>
       </section>
 
       <!-- IMPORT / EXPORT -->
@@ -158,9 +172,9 @@
   </footer>
 
   <!-- SCRIPTS -->
-  <script src='js/config.js?v=11'></script>
-  <script src='js/storage.js?v=11'></script>
-  <script src='js/app.js?v=11'></script>
+  <script src='js/config.js?v=12'></script>
+  <script src='js/storage.js?v=12'></script>
+  <script src='js/app.js?v=12'></script>
 </body>
 
 </html>
