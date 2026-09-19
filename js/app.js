@@ -31,12 +31,14 @@ let currentFlashcardIndex = 0;
 let flashcardList = [];
 let deferredInstallPrompt = null;
 let editingDefinitionId = null;
-let searchHistory = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || "[]");
+let searchHistory = loadSearchHistory();
 let currentRandomId = null;
 let isDropdownOpen = false;
 let isFocusMode = false;
 let displayedCount = 0;
 let proposalsCache = [];
+let reportsCache = [];
+let masteredDefinitions = loadMasteredLocal();
 const BATCH_SIZE = 10;
 
 /* ============================================================
@@ -57,6 +59,13 @@ function escapeHTML(value) {
     .replace(/'/g, "&#039;");
 }
 
+function loadSearchHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || "[]");
+    return Array.isArray(history) ? history.filter(item => typeof item === "string") : [];
+  } catch { return []; }
+}
+
 function normalizeDefinition(d) {
   return {
     ...d,
@@ -65,8 +74,16 @@ function normalizeDefinition(d) {
     matiere: String(d.matiere || "Management").trim(),
     def: String(d.def || d.definition || "").trim(),
     example: String(d.example || "").trim(),
-    remember: String(d.remember || "").trim()
+    remember: String(d.remember || "").trim(),
+    source: String(d.source || "").trim()
   };
+}
+
+function safeSourceUrl(source) {
+  try {
+    const url = new URL(source);
+    return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+  } catch { return ""; }
 }
 
 function highlight(text, q) {
@@ -183,6 +200,7 @@ function render() {
   }
 
   updateCounter();
+  renderProgress();
 
   if (!filtered.length) {
     container.innerHTML = `
@@ -235,6 +253,8 @@ function setupScrollObserver(filtered) {
    ============================================================ */
 function createCardHTML(d, index) {
   const isFav = favorites.includes(Number(d.id));
+  const isMastered = masteredDefinitions.includes(Number(d.id));
+  const sourceUrl = safeSourceUrl(d.source);
   return `
     <article class="card" data-id="${d.id}" data-matiere="${escapeHTML(d.matiere)}"
       style="animation-delay:${Math.min(index * 30, 300)}ms">
@@ -250,13 +270,44 @@ function createCardHTML(d, index) {
         <button class="card-action-btn fav-btn ${isFav ? "active" : ""}" onclick="toggleFavorite(${d.id})" title="Favori">
           <span class="heart-icon">${isFav ? "❤️" : "🤍"}</span>
         </button>
+        <button class="card-action-btn mastered-btn ${isMastered ? "active" : ""}" onclick="toggleMastered(${d.id})" title="${isMastered ? "Notion maîtrisée" : "Marquer comme maîtrisée"}">${isMastered ? "✓ Maîtrisée" : "○ À revoir"}</button>
+        <button class="card-action-btn report-btn" onclick="reportDefinition(${d.id})" title="Signaler une erreur">⚑</button>
       </div>
       <div class="card-extra" id="card-${d.id}">
         ${d.example ? `<div class="extra-block"><h4>💡 Exemple concret</h4><p>${escapeHTML(d.example)}</p></div>` : ""}
         ${d.remember ? `<div class="extra-block"><h4>📝 À retenir</h4><p>${escapeHTML(d.remember)}</p></div>` : ""}
+        ${sourceUrl ? `<div class="extra-block source-block"><h4>🔗 Source</h4><a href="${escapeHTML(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(d.source)}</a></div>` : ""}
       </div>
     </article>
   `;
+}
+
+function toggleMastered(id) {
+  const result = toggleMasteredLocal(id);
+  masteredDefinitions = loadMasteredLocal();
+  render();
+  showToast(result.mastered ? "✅ Notion marquée comme maîtrisée !" : "↩️ Notion remise à revoir.");
+}
+
+async function reportDefinition(id) {
+  const d = definitions.find(item => Number(item.id) === Number(id));
+  if (!d) return;
+  const message = prompt(`Quel est le problème avec « ${d.term} » ?`);
+  if (message === null) return;
+  if (message.trim().length < 5) { showToast("⚠️ Décris le problème en quelques mots."); return; }
+  try {
+    await submitReportRemote({ definitionId: d.id, term: d.term, message });
+    showToast("✅ Merci, le signalement a été envoyé.");
+  } catch (e) { showToast("⚠️ Impossible d'envoyer le signalement."); }
+}
+
+function renderProgress() {
+  const panel = document.getElementById("progressPanel");
+  if (!panel) return;
+  const count = definitions.filter(d => masteredDefinitions.includes(Number(d.id))).length;
+  const percentage = definitions.length ? Math.round((count / definitions.length) * 100) : 0;
+  const subjects = ["Management", "Droit", "Économie", "RH"];
+  panel.innerHTML = `<div class="progress-heading"><span>🎯 Ma progression</span><strong>${count} / ${definitions.length} maîtrisée${count !== 1 ? "s" : ""}</strong></div><div class="progress-bar" aria-label="${percentage}% des définitions maîtrisées"><span style="width:${percentage}%"></span></div><div class="progress-subjects">${subjects.map(subject => { const total = definitions.filter(d => d.matiere === subject).length; const mastered = definitions.filter(d => d.matiere === subject && masteredDefinitions.includes(Number(d.id))).length; return total ? `<span>${escapeHTML(subject)} <b>${mastered}/${total}</b></span>` : ""; }).join("")}</div>`;
 }
 
 function toggleCard(id, btn) {
@@ -621,6 +672,7 @@ async function initAdminData() {
   } catch (e) { console.error(e); }
   renderAdminList();
   await loadProposalsList();
+  await loadReportsList();
 }
 
 /* ============================================================
@@ -681,8 +733,9 @@ async function addDefinition() {
 
   const example = document.getElementById("formExample")?.value.trim() || "";
   const remember = document.getElementById("formRemember")?.value.trim() || "";
+  const source = document.getElementById("formSource")?.value.trim() || "";
 
-  const newDef = normalizeDefinition({ id: nextId(), term, matiere, def, example, remember });
+  const newDef = normalizeDefinition({ id: nextId(), term, matiere, def, example, remember, source });
   definitions.push(newDef);
 
   try {
@@ -698,7 +751,7 @@ async function addDefinition() {
 }
 
 function clearDefinitionForm() {
-  ["formTerm", "formDef", "formExample", "formRemember"].forEach(id => {
+  ["formTerm", "formDef", "formExample", "formRemember", "formSource"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -720,6 +773,8 @@ function editDefinition(id) {
   if (def) def.value = d.def;
   if (example) example.value = d.example || "";
   if (remember) remember.value = d.remember || "";
+  const source = document.getElementById("formSource");
+  if (source) source.value = d.source || "";
 
   editingDefinitionId = Number(id);
 
@@ -747,6 +802,7 @@ async function saveEditedDefinition() {
   d.def = document.getElementById("formDef")?.value.trim();
   d.example = document.getElementById("formExample")?.value.trim() || "";
   d.remember = document.getElementById("formRemember")?.value.trim() || "";
+  d.source = document.getElementById("formSource")?.value.trim() || "";
 
   try {
     await saveDefinitionsRemote();
@@ -947,7 +1003,7 @@ async function approveProposal(id) {
   if (!p) return;
 
   const newDef = normalizeDefinition({
-    id: nextId(), term: p.term, matiere: p.matiere, def: p.def, example: p.example || "", remember: p.remember || ""
+    id: nextId(), term: p.term, matiere: p.matiere, def: p.def, example: p.example || "", remember: p.remember || "", source: p.source || ""
   });
   definitions.push(newDef);
 
@@ -979,6 +1035,37 @@ async function rejectProposal(id) {
   }
 }
 
+async function loadReportsList() {
+  try { reportsCache = await fetchReportsRemote(); } catch (e) { reportsCache = []; }
+  renderReportsList();
+}
+
+function renderReportsList() {
+  const list = document.getElementById("reportsList");
+  const badge = document.getElementById("reportsCount");
+  if (!list) return;
+  const pending = reportsCache.filter(report => report.status === "pending");
+  if (badge) { badge.style.display = pending.length ? "inline-flex" : "none"; badge.textContent = pending.length; }
+  list.innerHTML = pending.length ? pending.map(report => `
+    <div class="admin-item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div><div class="admin-item-term">${escapeHTML(report.term)}</div><div class="admin-item-meta">Signalement d'une définition</div></div>
+        <button class="btn-reject" onclick="dismissReport(${report.id})" title="Traiter">✓</button>
+      </div>
+      <p class="proposal-item-def">${escapeHTML(report.message)}</p>
+    </div>`).join("") : `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucun signalement en attente.</p>`;
+}
+
+async function dismissReport(id) {
+  const backup = [...reportsCache];
+  reportsCache = reportsCache.map(report => Number(report.id) === Number(id) ? { ...report, status: "resolved" } : report);
+  try {
+    await saveReportsRemote(reportsCache);
+    renderReportsList();
+    showToast("✅ Signalement traité.");
+  } catch (e) { reportsCache = backup; showToast("⚠️ Erreur de sauvegarde."); }
+}
+
 /* ============================================================
    PAGE PROPOSER (propose.html)
    ============================================================ */
@@ -999,6 +1086,7 @@ async function handleProposalSubmit() {
     term, matiere, def,
     example: document.getElementById("pExample")?.value.trim() || "",
     remember: document.getElementById("pRemember")?.value.trim() || "",
+    source: document.getElementById("pSource")?.value.trim() || "",
     pseudo: document.getElementById("pPseudo")?.value.trim() || "",
     email: document.getElementById("pEmail")?.value.trim() || ""
   };
@@ -1020,7 +1108,7 @@ function showProposalSuccess() {
 }
 
 function resetProposalForm() {
-  ["pTerm", "pDef", "pExample", "pRemember", "pPseudo", "pEmail", "pWebsite"].forEach(id => {
+  ["pTerm", "pDef", "pExample", "pRemember", "pSource", "pPseudo", "pEmail", "pWebsite"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
