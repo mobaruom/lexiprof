@@ -140,6 +140,9 @@
             <p><span id='adminCount'>0</span> définition(s)</p>
           </div>
         </div>
+        <div class='form-row'>
+          <input type='text' id='adminSearchInput' placeholder='🔍 Rechercher un terme, une matière, une définition...' oninput='onAdminSearch()'>
+        </div>
         <button class='btn-secondary' style='color:var(--danger);border-color:var(--danger-light);margin-bottom:12px' onclick='deleteAllDefinitions()'>🗑 Supprimer toutes les définitions</button>
         <div id='adminList' class='admin-list'></div>
       </section>
