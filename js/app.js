@@ -678,16 +678,31 @@ async function initAdminData() {
 /* ============================================================
    ADMIN — LISTE DES DÉFINITIONS
    ============================================================ */
+let adminSearchQuery = "";
+
+function onAdminSearch() {
+  const input = document.getElementById("adminSearchInput");
+  adminSearchQuery = input ? input.value : "";
+  renderAdminList();
+}
+
 function renderAdminList() {
   const list = document.getElementById("adminList");
   const count = document.getElementById("adminCount");
   if (!list) return;
   if (count) count.textContent = definitions.length;
 
-  const sorted = [...definitions].sort((a, b) => a.term.localeCompare(b.term, "fr"));
+  let sorted = [...definitions].sort((a, b) => a.term.localeCompare(b.term, "fr"));
+
+  const q = adminSearchQuery.trim();
+  if (q) {
+    sorted = sorted.filter(d =>
+      fuzzyIncludes(d.term, q) || fuzzyIncludes(d.matiere, q) || fuzzyIncludes(d.def, q)
+    );
+  }
 
   if (!sorted.length) {
-    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucune définition.</p>`;
+    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">${q ? "Aucun résultat pour cette recherche." : "Aucune définition."}</p>`;
     return;
   }
 
