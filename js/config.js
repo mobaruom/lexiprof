@@ -16,6 +16,7 @@ const FALLBACK_KEY = "lexiprof_fallback";
 
 // Clés localStorage (préférences locales, rien de sensible)
 const FAVORITES_KEY = "lexiprof_favorites";
+const PROGRESS_KEY = "lexiprof_mastered";
 const THEME_KEY = "lexiprof_theme";
 const SEARCH_HISTORY_KEY = "lexiprof_search_history";
 const WELCOME_SEEN_KEY = "lexiprof_welcome_seen";
