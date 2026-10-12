@@ -1,118 +1,48 @@
-/* ============================================================
-   LEXIPROF — STORAGE.JS
-   Appels directs à Firebase Realtime Database (pas de backend,
-   pas de clé — règles publiques), cache local, favoris locaux,
-   mot de passe admin local, propositions.
-   ============================================================ */
-
 // ============================================================
-// APPELS FIREBASE REALTIME DATABASE
+// 🆕 COMPTEUR D'ID STABLE (ne redescend jamais)
 // ============================================================
-async function apiGet(path) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
-  if (!res.ok) {
-    let detail = "";
-    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
-    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
-  }
-  const data = await res.json();
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.definitions)) return data.definitions;
-  return [];
+function getNextStableId() {
+  let counter = parseInt(localStorage.getItem(ID_COUNTER_KEY) || "0", 10);
+  counter += 1;
+  localStorage.setItem(ID_COUNTER_KEY, String(counter));
+  return counter;
 }
 
-async function apiPut(path, arr) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(arr)
-  });
-  if (!res.ok) {
-    let detail = "";
-    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
-    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
-  }
-  return res.json();
-}
-
-// ============================================================
-// CACHE LOCAL
-// ============================================================
-function getCache(key) {
-  try {
-    const item = localStorage.getItem(`cache:${key}`);
-    if (!item) return null;
-    const { data, expiry } = JSON.parse(item);
-    if (Date.now() > expiry) {
-      localStorage.removeItem(`cache:${key}`);
-      return null;
-    }
-    return data;
-  } catch { return null; }
-}
-
-function setCache(key, data, ttl) {
-  try {
-    localStorage.setItem(`cache:${key}`, JSON.stringify({ data, expiry: Date.now() + ttl }));
-  } catch (e) { console.warn("Cache error:", e); }
-}
-
-function clearCache(pattern) {
-  const keys = Object.keys(localStorage).filter(k => k.startsWith("cache:"));
-  for (const k of keys) {
-    if (!pattern || k.includes(pattern)) localStorage.removeItem(k);
+function syncIdCounter() {
+  // Si les définitions distantes ont des IDs plus grands, on synchronise
+  const maxId = definitions.reduce((max, d) => Math.max(max, Number(d.id) || 0), 0);
+  const counter = parseInt(localStorage.getItem(ID_COUNTER_KEY) || "0", 10);
+  if (maxId > counter) {
+    localStorage.setItem(ID_COUNTER_KEY, String(maxId));
   }
 }
 
 // ============================================================
-// DÉFINITIONS
+// 🆕 RAFRAÎCHISSEMENT EN ARRIÈRE-PLAN
 // ============================================================
-async function loadRemote() {
-  const cacheKey = "defs:all";
-  const cached = getCache(cacheKey);
-  if (cached) {
-    definitions = cached;
-    return true;
-  }
-
+async function refreshDefinitionsInBackground(onDone) {
   try {
     const data = await apiGet("definitions");
-    definitions = data.map(normalizeDefinition);
-    setCache(cacheKey, definitions, CACHE_CONFIG.definitions_ttl);
-    localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
-    return true;
-  } catch (error) {
-    console.warn("⚠️ Firebase indisponible:", error.message);
-    try {
-      const stored = localStorage.getItem(FALLBACK_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length) {
-          definitions = parsed.map(normalizeDefinition);
-          return true;
-        }
-      }
-    } catch (e) { localStorage.removeItem(FALLBACK_KEY); }
-    definitions = defaultData.map(normalizeDefinition);
-    return false;
+    const fresh = data.map(normalizeDefinition);
+    // On ne remplace que si le contenu a changé
+    if (JSON.stringify(fresh) !== JSON.stringify(definitions)) {
+      definitions = fresh;
+      setCache("defs:all", definitions, CACHE_CONFIG.definitions_ttl);
+      localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
+      syncIdCounter();
+      if (typeof onDone === "function") onDone();
+    }
+  } catch (e) {
+    console.warn("Refresh arrière-plan échoué:", e.message);
   }
 }
 
-async function saveDefinitionsRemote() {
-  await apiPut("definitions", definitions);
-  clearCache("defs");
-  localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
-}
-
 // ============================================================
-// PROPOSITIONS
+// 🆕 PROPOSITIONS ATOMIQUES (évite l'écrasement entre élèves)
 // ============================================================
-async function submitProposalRemote(proposal) {
-  let current = [];
-  try { current = await apiGet("proposals"); } catch (e) { current = []; }
-  const nextPid = current.length ? Math.max(...current.map(p => Number(p.id) || 0)) + 1 : 1;
+async function submitProposalAtomic(proposal) {
   const entry = {
-    id: nextPid,
+    id: getNextStableId(),
     term: String(proposal.term || "").trim().slice(0, 120),
     matiere: String(proposal.matiere || "Management").trim(),
     def: String(proposal.def || "").trim().slice(0, 2000),
@@ -124,74 +54,182 @@ async function submitProposalRemote(proposal) {
     status: "pending",
     createdAt: new Date().toISOString()
   };
-  current.push(entry);
-  await apiPut("proposals", current);
+  // Firebase : POST crée une clé unique, pas d'écrasement
+  const res = await fetch(`${FIREBASE_DB_URL}/proposals.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
   return entry;
 }
 
 async function fetchProposalsRemote() {
-  return apiGet("proposals");
+  const res = await fetch(`${FIREBASE_DB_URL}/proposals.json`);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  if (!data) return [];
+  // Firebase renvoie un objet { pushKey: {...} }
+  return Object.entries(data).map(([key, val]) => ({ ...val, _pushKey: key }));
 }
 
-async function saveProposalsRemote(fullArray) {
-  return apiPut("proposals", fullArray);
+async function deleteProposalRemote(proposal) {
+  if (!proposal._pushKey) throw new Error("Pas de clé Firebase");
+  const res = await fetch(`${FIREBASE_DB_URL}/proposals/${proposal._pushKey}.json`, {
+    method: "DELETE"
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return true;
 }
 
-async function submitReportRemote(report) {
-  let current = [];
-  try { current = await apiGet("reports"); } catch (e) { current = []; }
-  const nextId = current.length ? Math.max(...current.map(r => Number(r.id) || 0)) + 1 : 1;
-  const entry = { id: nextId, definitionId: Number(report.definitionId) || 0, term: String(report.term || "").trim().slice(0, 120), message: String(report.message || "").trim().slice(0, 1000), status: "pending", createdAt: new Date().toISOString() };
-  current.push(entry);
-  await apiPut("reports", current);
+// ============================================================
+// 🆕 SIGNALEMENTS ATOMIQUES
+// ============================================================
+async function submitReportAtomic(report) {
+  const entry = {
+    id: getNextStableId(),
+    definitionId: Number(report.definitionId) || 0,
+    term: String(report.term || "").trim().slice(0, 120),
+    message: String(report.message || "").trim().slice(0, 1000),
+    reason: String(report.reason || "").trim().slice(0, 60),
+    status: "pending",
+    createdAt: new Date().toISOString()
+  };
+  const res = await fetch(`${FIREBASE_DB_URL}/reports.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry)
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
   return entry;
 }
 
-async function fetchReportsRemote() { return apiGet("reports"); }
-async function saveReportsRemote(fullArray) { return apiPut("reports", fullArray); }
-
-// ============================================================
-// FAVORIS (100% locaux)
-// ============================================================
-function loadFavoritesLocal() {
-  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }
-  catch { return []; }
+async function fetchReportsRemote() {
+  const res = await fetch(`${FIREBASE_DB_URL}/reports.json`);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  if (!data) return [];
+  return Object.entries(data).map(([key, val]) => ({ ...val, _pushKey: key }));
 }
 
-function toggleFavoriteLocal(id) {
-  id = Number(id);
-  const favs = loadFavoritesLocal();
-  const idx = favs.indexOf(id);
-  let favorited;
-  if (idx > -1) { favs.splice(idx, 1); favorited = false; }
-  else { favs.push(id); favorited = true; }
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
-  return { favorited };
+async function updateReportRemote(report) {
+  if (!report._pushKey) throw new Error("Pas de clé Firebase");
+  const res = await fetch(`${FIREBASE_DB_URL}/reports/${report._pushKey}.json`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: report.status })
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return true;
 }
 
-function loadMasteredLocal() {
+// ============================================================
+// 🆕 RECHERCHES SANS RÉSULTAT
+// ============================================================
+function loadSearchMisses() {
   try {
-    const ids = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "[]");
-    return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : [];
-  } catch { return []; }
+    const data = JSON.parse(localStorage.getItem(SEARCH_MISSES_KEY) || "{}");
+    return data && typeof data === "object" ? data : {};
+  } catch { return {}; }
 }
 
-function toggleMasteredLocal(id) {
-  id = Number(id);
-  const ids = loadMasteredLocal();
-  const index = ids.indexOf(id);
-  if (index > -1) ids.splice(index, 1); else ids.push(id);
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(ids));
-  return { mastered: index === -1 };
+function recordSearchMiss(query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (q.length < 2) return;
+  const misses = loadSearchMisses();
+  misses[q] = (misses[q] || 0) + 1;
+  // On garde les 50 plus fréquents
+  const sorted = Object.entries(misses).sort((a, b) => b[1] - a[1]).slice(0, 50);
+  localStorage.setItem(SEARCH_MISSES_KEY, JSON.stringify(Object.fromEntries(sorted)));
+}
+
+function getTopSearchMisses(limit = 10) {
+  const misses = loadSearchMisses();
+  return Object.entries(misses)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([term, count]) => ({ term, count }));
 }
 
 // ============================================================
-// MOT DE PASSE ADMIN (local, protection visuelle uniquement)
+// 🆕 QUASI-DOUBLONS (Taylorisme / Le taylorisme)
 // ============================================================
-function getAdminPassword() {
-  return localStorage.getItem(PWD_KEY) || DEFAULT_PW;
+function normalizeForDuplicate(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^(le |la |les |l'|un |une |des )/i, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
-function setAdminPassword(pwd) {
-  localStorage.setItem(PWD_KEY, pwd);
+function findQuasiDuplicates() {
+  const map = new Map();
+  const duplicates = [];
+  definitions.forEach(d => {
+    const key = normalizeForDuplicate(d.term) + "|" + normalizeText(d.matiere);
+    if (map.has(key)) {
+      duplicates.push([map.get(key), d]);
+    } else {
+      map.set(key, d);
+    }
+  });
+  return duplicates;
+}
+
+// ============================================================
+// 🆕 DÉFINITION DU JOUR
+// ============================================================
+function getDailyDefinition() {
+  if (!definitions.length) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const stored = JSON.parse(localStorage.getItem(DAILY_DEF_KEY) || "null");
+  if (stored && stored.date === today) {
+    const found = definitions.find(d => Number(d.id) === Number(stored.id));
+    if (found) return found;
+  }
+  const random = definitions[Math.floor(Math.random() * definitions.length)];
+  localStorage.setItem(DAILY_DEF_KEY, JSON.stringify({ date: today, id: random.id }));
+  return random;
+}
+
+// ============================================================
+// 🆕 RAPPEL D'EXPORT
+// ============================================================
+function getDaysSinceLastExport() {
+  const last = localStorage.getItem(LAST_EXPORT_KEY);
+  if (!last) return null;
+  const diff = Date.now() - new Date(last).getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+// ============================================================
+// 🆕 LIENS AUTOMATIQUES ENTRE TERMES
+// ============================================================
+function linkifyTerms(text, currentId) {
+  let html = escapeHTML(text);
+  // On trie les termes par longueur décroissante pour éviter les collisions
+  const terms = definitions
+    .filter(d => Number(d.id) !== Number(currentId) && d.term.length >= 3)
+    .sort((a, b) => b.term.length - a.term.length);
+  const linked = new Set();
+  terms.forEach(d => {
+    if (linked.has(d.term.toLowerCase())) return;
+    const regex = new RegExp(`\\b(${d.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})\\b`, "gi");
+    if (regex.test(html)) {
+      html = html.replace(regex, `<a href="#" class="term-link" onclick="jumpToTerm('${escapeHTML(d.term)}');return false;">$1</a>`);
+      linked.add(d.term.toLowerCase());
+    }
+  });
+  return html;
+}
+
+function jumpToTerm(term) {
+  const input = document.getElementById("searchInput");
+  if (input) input.value = term;
+  searchQuery = term;
+  updateSearchClear();
+  displayedCount = 0;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
