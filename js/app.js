@@ -1,12 +1,12 @@
 /* ============================================================
-   LEXIPROF v9 — APP.JS
+   LEXIPROF v10 — APP.JS
    Fichier unique partagé par les 4 pages (index/app/admin/propose).
    Chaque fonction se protège en vérifiant que les éléments DOM
    dont elle a besoin existent avant d'agir.
    ============================================================ */
 
 /* ============================================================
-   DONNÉES DE SECOURS (si JSONBin est injoignable)
+   DONNÉES DE SECOURS (si Firebase est injoignable)
    ============================================================ */
 const defaultData = [
   { id: 1, term: "Management", matiere: "Management", def: "Ensemble des techniques permettant de diriger, organiser et coordonner les ressources d'une organisation afin d'atteindre ses objectifs.", example: "Un manager organise le travail de son équipe, répartit les tâches et suit les résultats.", remember: "Le management consiste notamment à organiser, décider, coordonner et motiver." },
@@ -39,6 +39,16 @@ let displayedCount = 0;
 let proposalsCache = [];
 let reportsCache = [];
 let masteredDefinitions = loadMasteredLocal();
+let searchIndex = [];
+let searchTimer = null;
+let filterFavoritesOnly = false;
+let filterMasteredOnly = false;
+let pendingImport = null;
+let adminSearchQuery = "";
+let adminSubjectFilter = "all";
+let adminReviewOnly = false;
+let focusList = [];
+let focusIndex = 0;
 const BATCH_SIZE = 10;
 
 /* ============================================================
@@ -67,15 +77,20 @@ function loadSearchHistory() {
 }
 
 function normalizeDefinition(d) {
+  const subjectMap = { management: "Management", droit: "Droit", economie: "Économie", économie: "Économie", rh: "RH" };
+  const subjectInput = String(d.matiere || "Management").trim();
   return {
     ...d,
     id: Number(d.id) || nextId(),
     term: String(d.term || "").trim(),
-    matiere: String(d.matiere || "Management").trim(),
+    matiere: subjectMap[normalizeText(subjectInput)] || subjectInput,
     def: String(d.def || d.definition || "").trim(),
     example: String(d.example || "").trim(),
     remember: String(d.remember || "").trim(),
-    source: String(d.source || "").trim()
+    source: String(d.source || "").trim(),
+    aliases: Array.isArray(d.aliases) ? d.aliases.map(String) : String(d.aliases || "").split(",").map(alias => alias.trim()).filter(Boolean),
+    createdAt: d.createdAt || new Date().toISOString(),
+    needsReview: Boolean(d.needsReview)
   };
 }
 
@@ -122,12 +137,54 @@ function fuzzyIncludes(haystack, needle) {
   if (!n) return true;
   if (h.includes(n)) return true;
   const words = h.split(/[^a-z0-9]+/).filter(Boolean);
-  const threshold = n.length <= 4 ? 1 : (n.length <= 8 ? 2 : 3);
+  const threshold = n.length <= 4 ? 1 : 2;
   for (const w of words) {
     if (Math.abs(w.length - n.length) > threshold) continue;
     if (levenshtein(w, n) <= threshold) return true;
   }
   return false;
+}
+
+function buildSearchIndex() {
+  searchIndex = definitions.map(d => ({
+    id: Number(d.id),
+    term: normalizeText(d.term),
+    aliases: (d.aliases || []).map(normalizeText),
+    definition: normalizeText(d.def),
+    example: normalizeText(d.example),
+    remember: normalizeText(d.remember)
+  }));
+}
+
+function scoreDefinition(d, query) {
+  const index = searchIndex.find(item => item.id === Number(d.id));
+  if (!index) return -1;
+  const words = normalizeText(query).split(/\s+/).filter(Boolean);
+  if (!words.length) return 0;
+  let score = 0;
+  for (const word of words) {
+    const inTerm = index.term.includes(word);
+    const inAlias = index.aliases.some(alias => alias.includes(word));
+    const inOther = index.definition.includes(word) || index.example.includes(word) || index.remember.includes(word);
+    const fuzzy = fuzzyIncludes(index.term, word) || index.aliases.some(alias => fuzzyIncludes(alias, word));
+    if (!(inTerm || inAlias || inOther || fuzzy)) return -1;
+    if (index.term === word || index.aliases.includes(word)) score += 100;
+    else if (index.term.startsWith(word) || index.aliases.some(alias => alias.startsWith(word))) score += 75;
+    else if (inTerm || inAlias) score += 50;
+    else if (fuzzy) score += 30;
+    else score += 10;
+  }
+  return score;
+}
+
+function getSuggestions(query) {
+  const normalized = normalizeText(query);
+  if (!normalized) return [];
+  return definitions
+    .map(d => ({ term: d.term, score: scoreDefinition(d, query) }))
+    .filter(item => item.score >= 0 && normalizeText(item.term) !== normalized)
+    .sort((a, b) => b.score - a.score || a.term.localeCompare(b.term, "fr"))
+    .slice(0, 5);
 }
 
 /* ============================================================
@@ -138,11 +195,18 @@ async function loadAndRenderApp() {
   try {
     await loadRemote();
     favorites = loadFavoritesLocal();
+    masteredDefinitions = loadMasteredLocal();
+    buildSearchIndex();
+    syncIdCounter();
   } catch (e) {
     console.error(e);
   }
   render();
   hideLoader();
+  refreshDefinitionsInBackground(() => {
+    buildSearchIndex();
+    render();
+  });
 }
 
 function hideLoader() {
@@ -170,17 +234,25 @@ function getFilteredDefinitions() {
   const q = searchQuery.trim();
   let filtered = [...definitions];
 
-  if (currentFilter === "favorites") {
-    filtered = filtered.filter(d => favorites.includes(Number(d.id)));
-  } else if (currentFilter !== "all") {
+  if (currentFilter !== "all") {
     filtered = filtered.filter(d => d.matiere === currentFilter);
+  }
+  if (filterFavoritesOnly) {
+    filtered = filtered.filter(d => favorites.includes(Number(d.id)));
+  }
+  if (filterMasteredOnly) {
+    filtered = filtered.filter(d => masteredDefinitions.includes(Number(d.id)));
   }
 
   if (q) {
-    filtered = filtered.filter(d => fuzzyIncludes(d.term, q) || fuzzyIncludes(d.def, q));
+    filtered = filtered
+      .map(d => ({ d, score: scoreDefinition(d, q) }))
+      .filter(item => item.score >= 0)
+      .sort((a, b) => b.score - a.score || a.d.term.localeCompare(b.d.term, "fr"))
+      .map(item => item.d);
+  } else {
+    filtered.sort((a, b) => a.term.localeCompare(b.term, "fr"));
   }
-
-  filtered.sort((a, b) => a.term.localeCompare(b.term, "fr"));
   return filtered;
 }
 
@@ -191,8 +263,12 @@ function render() {
 
   const filtered = getFilteredDefinitions();
 
+  if (searchQuery.trim().length >= 2 && filtered.length === 0) {
+    recordSearchMiss(searchQuery.trim());
+  }
+
   if (info) {
-    if (searchQuery || currentFilter !== "all") {
+    if (searchQuery || currentFilter !== "all" || filterFavoritesOnly || filterMasteredOnly) {
       info.textContent = `${filtered.length} résultat${filtered.length !== 1 ? "s" : ""}`;
     } else {
       info.textContent = `${definitions.length} définition${definitions.length !== 1 ? "s" : ""}`;
@@ -203,11 +279,13 @@ function render() {
   renderProgress();
 
   if (!filtered.length) {
+    const suggestions = getSuggestions(searchQuery);
     container.innerHTML = `
       <div class="empty-state">
         <div class="icon">🔍</div>
         <h3>Aucun résultat</h3>
         <p>Essaie un autre terme ou change le filtre.</p>
+        ${suggestions.length ? `<div class="search-suggestions empty-suggestions"><strong>Vous cherchiez peut-être :</strong>${suggestions.map(item => `<button onclick='setSearchQuery(${JSON.stringify(item.term)})'>${escapeHTML(item.term)}</button>`).join("")}</div>` : ""}
       </div>
     `;
     displayedCount = 0;
@@ -255,14 +333,16 @@ function createCardHTML(d, index) {
   const isFav = favorites.includes(Number(d.id));
   const isMastered = masteredDefinitions.includes(Number(d.id));
   const sourceUrl = safeSourceUrl(d.source);
+  const isNew = d.createdAt && (Date.now() - new Date(d.createdAt).getTime() < 1000 * 60 * 60 * 24 * NEW_BADGE_DAYS);
+  const linkedDef = linkifyTerms(d.def, d.id);
   return `
     <article class="card" data-id="${d.id}" data-matiere="${escapeHTML(d.matiere)}"
       style="animation-delay:${Math.min(index * 30, 300)}ms">
       <div class="card-top">
-        <div class="card-term">${highlight(d.term, searchQuery)}</div>
+        <div class="card-term">${highlight(d.term, searchQuery)} ${isNew ? '<span class="new-badge">Nouveau</span>' : ""}</div>
         <span class="matiere-badge badge-${escapeHTML(d.matiere)}">${escapeHTML(d.matiere)}</span>
       </div>
-      <div class="card-def">${highlight(d.def, searchQuery)}</div>
+      <div class="card-def">${linkedDef}</div>
       <div class="card-actions-row">
         <button class="open-card-btn" onclick="toggleCard(${d.id}, this)">📖 Ouvrir la fiche</button>
         <button class="card-action-btn" onclick="copyDefinition(${d.id})" title="Copier">📋</button>
@@ -271,12 +351,13 @@ function createCardHTML(d, index) {
           <span class="heart-icon">${isFav ? "❤️" : "🤍"}</span>
         </button>
         <button class="card-action-btn mastered-btn ${isMastered ? "active" : ""}" onclick="toggleMastered(${d.id})" title="${isMastered ? "Notion maîtrisée" : "Marquer comme maîtrisée"}">${isMastered ? "✓ Maîtrisée" : "○ À revoir"}</button>
-        <button class="card-action-btn report-btn" onclick="reportDefinition(${d.id})" title="Signaler une erreur">⚑</button>
+        <button class="card-action-btn report-btn" onclick="openReportModal(${d.id})" title="Signaler une erreur">⚑</button>
       </div>
       <div class="card-extra" id="card-${d.id}">
         ${d.example ? `<div class="extra-block"><h4>💡 Exemple concret</h4><p>${escapeHTML(d.example)}</p></div>` : ""}
         ${d.remember ? `<div class="extra-block"><h4>📝 À retenir</h4><p>${escapeHTML(d.remember)}</p></div>` : ""}
         ${sourceUrl ? `<div class="extra-block source-block"><h4>🔗 Source</h4><a href="${escapeHTML(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(d.source)}</a></div>` : ""}
+        ${d.aliases?.length ? `<div class="extra-block"><h4>🔎 Aussi appelé</h4><p>${d.aliases.map(escapeHTML).join(" · ")}</p></div>` : ""}
       </div>
     </article>
   `;
@@ -289,18 +370,86 @@ function toggleMastered(id) {
   showToast(result.mastered ? "✅ Notion marquée comme maîtrisée !" : "↩️ Notion remise à revoir.");
 }
 
-async function reportDefinition(id) {
+/* ============================================================
+   SIGNALEMENT (vraie modale)
+   ============================================================ */
+function openReportModal(id) {
   const d = definitions.find(item => Number(item.id) === Number(id));
   if (!d) return;
-  const message = prompt(`Quel est le problème avec « ${d.term} » ?`);
-  if (message === null) return;
-  if (message.trim().length < 5) { showToast("⚠️ Décris le problème en quelques mots."); return; }
-  try {
-    await submitReportRemote({ definitionId: d.id, term: d.term, message });
-    showToast("✅ Merci, le signalement a été envoyé.");
-  } catch (e) { showToast("⚠️ Impossible d'envoyer le signalement."); }
+
+  let modal = document.getElementById("reportModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "reportModal";
+    modal.className = "overlay";
+    modal.innerHTML = `
+      <div class="auth-modal" style="max-width:420px">
+        <div class="auth-header">
+          <h2>⚑ Signaler une erreur</h2>
+          <button class="btn-close" onclick="closeReportModal()" aria-label="Fermer">×</button>
+        </div>
+        <div class="auth-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+            Terme : <strong id="reportTermName"></strong>
+          </p>
+          <div class="form-row">
+            <label>Motif</label>
+            <div class="report-reasons">
+              <button type="button" class="report-reason" data-reason="erreur" onclick="selectReportReason(this)">❌ Erreur</button>
+              <button type="button" class="report-reason" data-reason="pas clair" onclick="selectReportReason(this)">🤔 Pas clair</button>
+              <button type="button" class="report-reason" data-reason="incomplet" onclick="selectReportReason(this)">📝 Incomplet</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="reportMessage">Détails <span>(optionnel)</span></label>
+            <textarea id="reportMessage" placeholder="Décris le problème..."></textarea>
+          </div>
+          <button class="btn-add" onclick="submitReport()">Envoyer le signalement</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", e => { if (e.target === modal) closeReportModal(); });
+  }
+
+  document.getElementById("reportTermName").textContent = d.term;
+  document.getElementById("reportMessage").value = "";
+  document.querySelectorAll(".report-reason").forEach(b => b.classList.remove("active"));
+  modal.dataset.definitionId = d.id;
+  modal.classList.add("open");
 }
 
+function selectReportReason(btn) {
+  document.querySelectorAll(".report-reason").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+function closeReportModal() {
+  document.getElementById("reportModal")?.classList.remove("open");
+}
+
+async function submitReport() {
+  const modal = document.getElementById("reportModal");
+  const definitionId = Number(modal.dataset.definitionId);
+  const d = definitions.find(item => Number(item.id) === definitionId);
+  if (!d) return;
+
+  const reasonBtn = modal.querySelector(".report-reason.active");
+  const reason = reasonBtn ? reasonBtn.dataset.reason : "autre";
+  const message = document.getElementById("reportMessage")?.value.trim() || "";
+
+  try {
+    await submitReportAtomic({ definitionId, term: d.term, message, reason });
+    closeReportModal();
+    showToast("✅ Merci, le signalement a été envoyé.");
+  } catch (e) {
+    showToast("⚠️ Impossible d'envoyer le signalement.");
+  }
+}
+
+/* ============================================================
+   PROGRESSION
+   ============================================================ */
 function renderProgress() {
   const panel = document.getElementById("progressPanel");
   if (!panel) return;
@@ -310,6 +459,9 @@ function renderProgress() {
   panel.innerHTML = `<div class="progress-heading"><span>🎯 Ma progression</span><strong>${count} / ${definitions.length} maîtrisée${count !== 1 ? "s" : ""}</strong></div><div class="progress-bar" aria-label="${percentage}% des définitions maîtrisées"><span style="width:${percentage}%"></span></div><div class="progress-subjects">${subjects.map(subject => { const total = definitions.filter(d => d.matiere === subject).length; const mastered = definitions.filter(d => d.matiere === subject && masteredDefinitions.includes(Number(d.id))).length; return total ? `<span>${escapeHTML(subject)} <b>${mastered}/${total}</b></span>` : ""; }).join("")}</div>`;
 }
 
+/* ============================================================
+   FICHE DÉPLIABLE
+   ============================================================ */
 function toggleCard(id, btn) {
   const extra = document.getElementById(`card-${id}`);
   if (!extra) return;
@@ -320,9 +472,13 @@ function toggleCard(id, btn) {
   } else {
     extra.classList.add("open");
     btn.innerHTML = "📕 Fermer la fiche";
+    commitSearchHistory();
   }
 }
 
+/* ============================================================
+   COPIER / PARTAGER
+   ============================================================ */
 async function copyDefinition(id) {
   const d = definitions.find(x => Number(x.id) === Number(id));
   if (!d) return;
@@ -371,9 +527,12 @@ function onSearch() {
   if (!input) return;
   searchQuery = input.value;
   updateSearchClear();
-  addToSearchHistory(searchQuery);
-  displayedCount = 0;
-  render();
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    displayedCount = 0;
+    render();
+    renderSearchSuggestions();
+  }, 150);
 }
 
 function clearSearch() {
@@ -402,6 +561,19 @@ function addToSearchHistory(query) {
   renderSearchHistory();
 }
 
+function commitSearchHistory() {
+  const query = searchQuery.trim();
+  if (query && getFilteredDefinitions().length) addToSearchHistory(query);
+}
+
+function renderSearchSuggestions() {
+  const container = document.getElementById("searchSuggestions");
+  if (!container) return;
+  const suggestions = getSuggestions(searchQuery);
+  container.innerHTML = suggestions.length ? suggestions.map(item => `<button onclick='setSearchQuery(${JSON.stringify(item.term)})'>${escapeHTML(item.term)}</button>`).join("") : "";
+  container.classList.toggle("visible", Boolean(suggestions.length && searchQuery.trim()));
+}
+
 function renderSearchHistory() {
   const container = document.getElementById("searchHistory");
   if (!container) return;
@@ -422,6 +594,20 @@ function setSearchQuery(q) {
   updateSearchClear();
   displayedCount = 0;
   render();
+  commitSearchHistory();
+}
+
+/* ============================================================
+   LIENS AUTOMATIQUES ENTRE TERMES
+   ============================================================ */
+function jumpToTerm(term) {
+  const input = document.getElementById("searchInput");
+  if (input) input.value = term;
+  searchQuery = term;
+  updateSearchClear();
+  displayedCount = 0;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /* ============================================================
@@ -445,11 +631,11 @@ function setFilterFromDropdown(filter, btn) {
   const label = document.getElementById("filterDropdownLabel");
   const dot = document.getElementById("filterDropdownDot");
   if (label) {
-    const texts = { all: "Toutes les matières", Management: "Management", Droit: "Droit", Économie: "Économie", RH: "RH", favorites: "Mes favoris" };
+    const texts = { all: "Toutes les matières", Management: "Management", Droit: "Droit", Économie: "Économie", RH: "RH" };
     label.textContent = texts[filter] || filter;
   }
   if (dot) {
-    const colors = { all: "var(--text)", Management: "var(--mgt)", Droit: "var(--drt)", Économie: "var(--eco)", RH: "var(--rh)", favorites: "var(--accent)" };
+    const colors = { all: "var(--text)", Management: "var(--mgt)", Droit: "var(--drt)", Économie: "var(--eco)", RH: "var(--rh)" };
     dot.style.background = colors[filter] || "var(--text)";
   }
 
@@ -457,6 +643,15 @@ function setFilterFromDropdown(filter, btn) {
   document.getElementById("filterDropdownMenu")?.classList.remove("open");
   document.getElementById("filterDropdownBtn")?.classList.remove("open");
 
+  displayedCount = 0;
+  render();
+}
+
+function toggleQuickFilter(type) {
+  if (type === "favorites") filterFavoritesOnly = !filterFavoritesOnly;
+  if (type === "mastered") filterMasteredOnly = !filterMasteredOnly;
+  document.getElementById("quickFavorites")?.classList.toggle("active", filterFavoritesOnly);
+  document.getElementById("quickMastered")?.classList.toggle("active", filterMasteredOnly);
   displayedCount = 0;
   render();
 }
@@ -513,9 +708,6 @@ function updateThemeButton() {
 /* ============================================================
    MODE FOCUS — lecteur immersif plein écran
    ============================================================ */
-let focusList = [];
-let focusIndex = 0;
-
 function toggleFocusMode() {
   focusList = getFilteredDefinitions();
   if (!focusList.length) { showToast("⚠️ Aucune définition à afficher."); return; }
@@ -590,7 +782,7 @@ function focusToggleFavorite() {
 }
 
 /* ============================================================
-   AUTH COSMÉTIQUE (index.html — pas encore fonctionnel)
+   AUTH COSMÉTIQUE (index.html)
    ============================================================ */
 function openAuthModal() {
   document.getElementById("authOverlay")?.classList.add("open");
@@ -624,7 +816,7 @@ function handleCosmeticAuth() {
 }
 
 /* ============================================================
-   ADMIN — VERROUILLAGE (mot de passe local)
+   ADMIN — VERROUILLAGE
    ============================================================ */
 function initAdminPage() {
   if (sessionStorage.getItem("lexiprof_admin_unlocked") === "1") {
@@ -669,21 +861,92 @@ async function initAdminData() {
   try {
     clearCache("defs");
     await loadRemote();
+    syncIdCounter();
   } catch (e) { console.error(e); }
   renderAdminList();
+  renderExportReminder();
   await loadProposalsList();
   await loadReportsList();
 }
 
 /* ============================================================
+   ADMIN — RAPPEL EXPORT
+   ============================================================ */
+function renderExportReminder() {
+  const adminContent = document.getElementById("adminContent");
+  if (!adminContent) return;
+  const existing = document.querySelector(".export-reminder");
+  if (existing) existing.remove();
+  const days = getDaysSinceLastExport();
+  if (days === null || days < 7) return;
+  const banner = document.createElement("div");
+  banner.className = "export-reminder";
+  banner.innerHTML = `
+    <span>⚠️ Dernier export il y a <strong>${days} jours</strong>. Pense à sauvegarder.</span>
+    <button onclick="exportJson()">📤 Exporter maintenant</button>
+  `;
+  adminContent.insertBefore(banner, adminContent.firstChild);
+}
+
+/* ============================================================
    ADMIN — LISTE DES DÉFINITIONS
    ============================================================ */
-let adminSearchQuery = "";
-
 function onAdminSearch() {
   const input = document.getElementById("adminSearchInput");
   adminSearchQuery = input ? input.value : "";
   renderAdminList();
+}
+
+function setAdminFilter(subject) {
+  adminSubjectFilter = subject;
+  document.querySelectorAll("[data-admin-subject]").forEach(button => button.classList.toggle("active", button.dataset.adminSubject === subject));
+  renderAdminList();
+}
+
+function toggleAdminReview() {
+  adminReviewOnly = !adminReviewOnly;
+  document.getElementById("adminReviewFilter")?.classList.toggle("active", adminReviewOnly);
+  renderAdminList();
+}
+
+function renderQualityDashboard() {
+  const dashboard = document.getElementById("qualityDashboard");
+  if (!dashboard) return;
+  const missing = field => definitions.filter(d => !String(d[field] || "").trim()).length;
+  const subjects = ["Management", "Droit", "Économie", "RH"]
+    .map(subject => `${subject} <b>${definitions.filter(d => d.matiere === subject).length}</b>`)
+    .join(" · ");
+  const review = definitions.filter(d => d.needsReview).length;
+  const quasiDupes = findQuasiDuplicates();
+  const misses = getTopSearchMisses(5);
+
+  dashboard.innerHTML = `
+    <div class="quality-title">📊 Qualité du dictionnaire</div>
+    <p>${subjects}</p>
+    <div class="quality-metrics">
+      <span>Sans exemple <b>${missing("example")}</b></span>
+      <span>Sans mémo <b>${missing("remember")}</b></span>
+      <span>Sans source <b>${missing("source")}</b></span>
+      <span>À vérifier <b>${review}</b></span>
+      <span>Quasi-doublons <b>${quasiDupes.length}</b></span>
+    </div>
+    ${quasiDupes.length ? `
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--accent)">Voir les quasi-doublons (${quasiDupes.length})</summary>
+        <ul style="margin-top:8px;padding-left:18px;font-size:11px">
+          ${quasiDupes.map(([a, b]) => `<li>« ${escapeHTML(a.term)} » ↔ « ${escapeHTML(b.term)} »</li>`).join("")}
+        </ul>
+      </details>
+    ` : ""}
+    ${misses.length ? `
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--drt)">Termes demandés mais absents (${misses.length})</summary>
+        <ul style="margin-top:8px;padding-left:18px;font-size:11px">
+          ${misses.map(m => `<li>« ${escapeHTML(m.term)} » — ${m.count} recherche(s)</li>`).join("")}
+        </ul>
+      </details>
+    ` : ""}
+  `;
 }
 
 function renderAdminList() {
@@ -700,6 +963,9 @@ function renderAdminList() {
       fuzzyIncludes(d.term, q) || fuzzyIncludes(d.matiere, q) || fuzzyIncludes(d.def, q)
     );
   }
+  if (adminSubjectFilter !== "all") sorted = sorted.filter(d => d.matiere === adminSubjectFilter);
+  if (adminReviewOnly) sorted = sorted.filter(d => d.needsReview);
+  renderQualityDashboard();
 
   if (!sorted.length) {
     list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">${q ? "Aucun résultat pour cette recherche." : "Aucune définition."}</p>`;
@@ -710,7 +976,7 @@ function renderAdminList() {
     <div class="admin-item">
       <div>
         <div class="admin-item-term">${escapeHTML(d.term)}</div>
-        <div class="admin-item-meta">${escapeHTML(d.matiere)}</div>
+        <div class="admin-item-meta">${escapeHTML(d.matiere)}${d.needsReview ? " · À vérifier" : ""}</div>
       </div>
       <div class="admin-item-actions">
         <button class="btn-edit" onclick="editDefinition(${d.id})" title="Modifier">✎</button>
@@ -750,12 +1016,15 @@ async function addDefinition() {
   const remember = document.getElementById("formRemember")?.value.trim() || "";
   const source = document.getElementById("formSource")?.value.trim() || "";
 
-  const newDef = normalizeDefinition({ id: nextId(), term, matiere, def, example, remember, source });
+  const aliases = document.getElementById("formAliases")?.value || "";
+  const needsReview = Boolean(document.getElementById("formNeedsReview")?.checked);
+  const newDef = normalizeDefinition({ id: getNextStableId(), term, matiere, def, example, remember, source, aliases, needsReview, createdAt: new Date().toISOString() });
   definitions.push(newDef);
 
   try {
     showToast("⏳ Sauvegarde...");
     await saveDefinitionsRemote();
+    syncIdCounter();
     renderAdminList();
     clearDefinitionForm();
     showToast("✅ Définition ajoutée !");
@@ -766,12 +1035,14 @@ async function addDefinition() {
 }
 
 function clearDefinitionForm() {
-  ["formTerm", "formDef", "formExample", "formRemember", "formSource"].forEach(id => {
+  ["formTerm", "formDef", "formExample", "formRemember", "formSource", "formAliases"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
   const matiere = document.getElementById("formMatiere");
   if (matiere) matiere.value = "Management";
+  const review = document.getElementById("formNeedsReview");
+  if (review) review.checked = false;
 }
 
 function editDefinition(id) {
@@ -790,6 +1061,10 @@ function editDefinition(id) {
   if (remember) remember.value = d.remember || "";
   const source = document.getElementById("formSource");
   if (source) source.value = d.source || "";
+  const aliases = document.getElementById("formAliases");
+  if (aliases) aliases.value = (d.aliases || []).join(", ");
+  const review = document.getElementById("formNeedsReview");
+  if (review) review.checked = Boolean(d.needsReview);
 
   editingDefinitionId = Number(id);
 
@@ -818,6 +1093,8 @@ async function saveEditedDefinition() {
   d.example = document.getElementById("formExample")?.value.trim() || "";
   d.remember = document.getElementById("formRemember")?.value.trim() || "";
   d.source = document.getElementById("formSource")?.value.trim() || "";
+  d.aliases = String(document.getElementById("formAliases")?.value || "").split(",").map(item => item.trim()).filter(Boolean);
+  d.needsReview = Boolean(document.getElementById("formNeedsReview")?.checked);
 
   try {
     await saveDefinitionsRemote();
@@ -856,6 +1133,8 @@ async function deleteDefinition(id) {
 async function deleteAllDefinitions() {
   if (!definitions.length) { showToast("⚠️ Aucune définition à supprimer."); return; }
 
+  exportJson(true);
+
   const confirmation = prompt(
     `⚠️ Ceci va supprimer DÉFINITIVEMENT les ${definitions.length} définitions du site.\nTape SUPPRIMER (en majuscules) pour confirmer.`
   );
@@ -870,7 +1149,7 @@ async function deleteAllDefinitions() {
   try {
     await saveDefinitionsRemote();
     renderAdminList();
-    showToast("🗑 Toutes les définitions ont été supprimées.");
+    showToast("🗑 Toutes les définitions ont été supprimées. Une sauvegarde JSON a été téléchargée.");
   } catch (e) {
     definitions = backup;
     showToast("⚠️ Erreur de sauvegarde : " + (e.message || "réessaie."));
@@ -930,28 +1209,64 @@ function handleJSONImport() {
   }
 }
 
-async function processImport(parsed) {
+function definitionKey(d) {
+  return `${normalizeText(d.term)}|${normalizeText(d.matiere)}`;
+}
+
+function processImport(parsed) {
   const imported = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.definitions) ? parsed.definitions : []);
   if (!imported.length) { showToast("⚠️ Aucune définition trouvée."); return; }
 
+  const existing = new Map(definitions.map(d => [definitionKey(d), d]));
+  const valid = [];
+  let duplicates = 0;
+  let invalid = 0;
+  imported.forEach(raw => {
+    const d = normalizeDefinition(raw || {});
+    if (!d.term || !d.def) { invalid++; return; }
+    if (existing.has(definitionKey(d))) duplicates++; else valid.push(d);
+  });
+  pendingImport = { valid, imported, duplicates, invalid };
+  const preview = document.getElementById("importPreview");
+  if (preview) {
+    preview.style.display = "block";
+    preview.innerHTML = `<strong>Aperçu d'import</strong><p><b>${valid.length}</b> nouvelles · <b>${duplicates}</b> doublons · <b>${invalid}</b> invalides</p><label class="check-row"><input type="checkbox" id="replaceDuplicates"> Remplacer les doublons existants</label><button class="btn-add" type="button" onclick="confirmImport()">Confirmer l'import</button><button class="btn-secondary" type="button" onclick="cancelImport()">Annuler</button>`;
+  }
+}
+
+async function confirmImport() {
+  if (!pendingImport) return;
+  const replace = Boolean(document.getElementById("replaceDuplicates")?.checked);
   const backup = [...definitions];
-  let maxId = definitions.length ? Math.max(...definitions.map(d => Number(d.id) || 0)) : 0;
-  imported.forEach((d) => {
-    maxId += 1;
-    definitions.push(normalizeDefinition({ ...d, id: maxId }));
+  const existingByKey = new Map(definitions.map((d, index) => [definitionKey(d), index]));
+  const incoming = pendingImport.imported.map(raw => normalizeDefinition(raw || {})).filter(d => d.term && d.def);
+  incoming.forEach(d => {
+    const key = definitionKey(d);
+    if (existingByKey.has(key)) {
+      if (replace) definitions[existingByKey.get(key)] = normalizeDefinition({ ...d, id: definitions[existingByKey.get(key)].id, createdAt: definitions[existingByKey.get(key)].createdAt });
+    } else {
+      definitions.push(normalizeDefinition({ ...d, id: getNextStableId(), createdAt: new Date().toISOString() }));
+      existingByKey.set(key, definitions.length - 1);
+    }
   });
 
   try {
     await saveDefinitionsRemote();
+    syncIdCounter();
+    buildSearchIndex();
     renderAdminList();
-    showToast(`✅ ${imported.length} définition(s) importée(s)`);
+    document.getElementById("importPreview").style.display = "none";
+    showToast(`✅ Import terminé : ${pendingImport.valid.length} nouvelle(s).`);
+    pendingImport = null;
   } catch (e) {
     definitions = backup;
     showToast("⚠️ " + (e.message || "Erreur d'import."));
   }
 }
 
-function exportJson() {
+function cancelImport() { pendingImport = null; const preview = document.getElementById("importPreview"); if (preview) preview.style.display = "none"; }
+
+function exportJson(silent = false) {
   const blob = new Blob([JSON.stringify(definitions, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -959,7 +1274,9 @@ function exportJson() {
   a.download = "lexiprof-definitions.json";
   a.click();
   URL.revokeObjectURL(url);
-  showToast("📦 JSON exporté !");
+  localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
+  if (!silent) showToast("📦 JSON exporté !");
+  renderExportReminder();
 }
 
 /* ============================================================
@@ -1018,30 +1335,35 @@ async function approveProposal(id) {
   if (!p) return;
 
   const newDef = normalizeDefinition({
-    id: nextId(), term: p.term, matiere: p.matiere, def: p.def, example: p.example || "", remember: p.remember || "", source: p.source || ""
+    id: getNextStableId(),
+    term: p.term, matiere: p.matiere, def: p.def,
+    example: p.example || "", remember: p.remember || "",
+    source: p.source || "", aliases: p.aliases || [],
+    createdAt: new Date().toISOString()
   });
   definitions.push(newDef);
 
-  const backupProposals = [...proposalsCache];
   try {
     await saveDefinitionsRemote();
+    await deleteProposalRemote(p);
+    syncIdCounter();
     proposalsCache = proposalsCache.filter(x => Number(x.id) !== Number(id));
-    await saveProposalsRemote(proposalsCache);
     renderAdminList();
     renderProposalsList();
     showToast("✅ Définition ajoutée !");
   } catch (e) {
     definitions = definitions.filter(d => d.id !== newDef.id);
-    proposalsCache = backupProposals;
     showToast("⚠️ " + (e.message || "Erreur."));
   }
 }
 
 async function rejectProposal(id) {
+  const proposal = proposalsCache.find(x => Number(x.id) === Number(id));
+  if (!proposal) return;
   const backup = [...proposalsCache];
   proposalsCache = proposalsCache.filter(x => Number(x.id) !== Number(id));
   try {
-    await saveProposalsRemote(proposalsCache);
+    await deleteProposalRemote(proposal);
     renderProposalsList();
     showToast("🗑 Proposition refusée.");
   } catch (e) {
@@ -1064,10 +1386,10 @@ function renderReportsList() {
   list.innerHTML = pending.length ? pending.map(report => `
     <div class="admin-item" style="flex-direction:column;align-items:stretch">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-        <div><div class="admin-item-term">${escapeHTML(report.term)}</div><div class="admin-item-meta">Signalement d'une définition</div></div>
+        <div><div class="admin-item-term">${escapeHTML(report.term)}</div><div class="admin-item-meta">Signalement · ${escapeHTML(report.reason || "autre")}</div></div>
         <button class="btn-reject" onclick="dismissReport(${report.id})" title="Traiter">✓</button>
       </div>
-      <p class="proposal-item-def">${escapeHTML(report.message)}</p>
+      <p class="proposal-item-def">${escapeHTML(report.message || "(aucun détail)")}</p>
     </div>`).join("") : `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucun signalement en attente.</p>`;
 }
 
@@ -1075,7 +1397,8 @@ async function dismissReport(id) {
   const backup = [...reportsCache];
   reportsCache = reportsCache.map(report => Number(report.id) === Number(id) ? { ...report, status: "resolved" } : report);
   try {
-    await saveReportsRemote(reportsCache);
+    const report = reportsCache.find(item => Number(item.id) === Number(id));
+    await updateReportRemote(report);
     renderReportsList();
     showToast("✅ Signalement traité.");
   } catch (e) { reportsCache = backup; showToast("⚠️ Erreur de sauvegarde."); }
@@ -1108,7 +1431,7 @@ async function handleProposalSubmit() {
 
   try {
     showToast("⏳ Envoi...");
-    await submitProposalRemote(proposal);
+    await submitProposalAtomic(proposal);
     showProposalSuccess();
   } catch (e) {
     showToast("⚠️ " + (e.message || "Erreur d'envoi."));
@@ -1244,6 +1567,26 @@ function closeRandomModal() {
 }
 
 /* ============================================================
+   DÉFINITION DU JOUR (accueil)
+   ============================================================ */
+function renderDailyDefinition() {
+  const hero = document.querySelector(".hero");
+  if (!hero) return;
+  if (document.querySelector(".daily-def")) return;
+  const d = getDailyDefinition();
+  if (!d) return;
+  const div = document.createElement("div");
+  div.className = "daily-def";
+  div.innerHTML = `
+    <div class="daily-label">📅 Définition du jour</div>
+    <div class="daily-term">${escapeHTML(d.term)}</div>
+    <div class="daily-def-text">${escapeHTML(d.def)}</div>
+    <button class="daily-btn" onclick="jumpToTerm('${escapeHTML(d.term).replace(/'/g, "\\'")}')">Voir la fiche</button>
+  `;
+  hero.appendChild(div);
+}
+
+/* ============================================================
    TOAST
    ============================================================ */
 function showToast(message) {
@@ -1287,6 +1630,7 @@ function initKeyboardShortcuts() {
       closeFlashcard();
       closeRandomModal();
       closeAuthModal();
+      closeReportModal();
       if (isDropdownOpen) {
         isDropdownOpen = false;
         document.getElementById("filterDropdownMenu")?.classList.remove("open");
@@ -1362,7 +1706,7 @@ function initWelcome() {
 function initHeroAnimation() {
   const heroTitle = document.getElementById("heroTitle");
   if (!heroTitle) return;
-  const text = "Dictionnaire STMG";
+  const text = heroTitle.textContent.trim() || "Dictionnaire STMG";
   heroTitle.innerHTML = "";
   text.split("").forEach((char, i) => {
     const span = document.createElement("span");
@@ -1431,6 +1775,11 @@ function initEventListeners() {
   if (randomModal) {
     randomModal.addEventListener("click", e => { if (e.target === randomModal) closeRandomModal(); });
   }
+
+  const flashcardOverlay = document.getElementById("flashcardOverlay");
+  if (flashcardOverlay) {
+    flashcardOverlay.addEventListener("click", e => { if (e.target === flashcardOverlay) closeFlashcard(); });
+  }
 }
 
 /* ============================================================
@@ -1457,6 +1806,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("pwdGate")) {
     initAdminPage();
   }
+
+  if (document.querySelector(".hero")) {
+    setTimeout(renderDailyDefinition, 500);
+  }
 });
 
-console.log("📚 LexiProf v9 — app.js chargé");
+console.log("📚 LexiProf v10 — app.js chargé");
