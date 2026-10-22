@@ -1,5 +1,5 @@
 /* ============================================================
-   LEXIPROF — STORAGE.JS
+   LEXIPROF — STORAGE.JS 
    Appels directs à Firebase Realtime Database (pas de backend,
    pas de clé — règles publiques), cache local, favoris locaux,
    mot de passe admin local, propositions.
