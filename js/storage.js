@@ -19,7 +19,6 @@ async function apiGet(path) {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.definitions)) return data.definitions;
   if (data && typeof data === "object") {
-    // Firebase renvoie parfois un objet { pushKey: {...} }
     return Object.entries(data).map(([key, val]) => ({ ...val, _pushKey: key }));
   }
   return [];
@@ -193,6 +192,7 @@ async function submitProposalAtomic(proposal) {
     createdAt: new Date().toISOString()
   };
   await apiPost("proposals", entry);
+  recordSentProposal(entry);
   return entry;
 }
 
@@ -387,4 +387,73 @@ function linkifyTerms(text, currentId) {
     }
   });
   return html;
+}
+
+// ============================================================
+// LOT A — EXPORT RGPD (#98)
+// ============================================================
+function exportUserDataRGPD() {
+  const session = getSession();
+  const prefs = getUserPrefs();
+  const favorites = loadFavoritesLocal();
+  const mastered = loadMasteredLocal();
+  const searchHistory = loadSearchHistory();
+  const searchMisses = loadSearchMisses();
+  const proposals = loadSentProposals();
+
+  const payload = {
+    _meta: {
+      app: "LexiProf",
+      exported_at: new Date().toISOString(),
+      version: "1.0-LOT-A",
+      rgpd_article: "Article 20 — Droit à la portabilité des données"
+    },
+    account: session ? {
+      id: session.id,
+      email: session.email,
+      displayName: session.displayName,
+      createdAt: session.createdAt
+    } : null,
+    preferences: prefs,
+    favorites,
+    mastered,
+    searchHistory,
+    searchMisses,
+    proposalsSent: proposals
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lexiprof-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("📦 Tes données ont été exportées.");
+}
+
+// ============================================================
+// LOT A — PROPOSITIONS ENVOYÉES (#46 préparation)
+// ============================================================
+function loadSentProposals() {
+  try {
+    const data = JSON.parse(localStorage.getItem(PROPOSALS_SENT_KEY) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+function recordSentProposal(proposal) {
+  const session = getSession();
+  const list = loadSentProposals();
+  list.unshift({
+    id: "prop_" + Date.now().toString(36),
+    userId: session ? session.id : null,
+    term: proposal.term,
+    matiere: proposal.matiere,
+    def: proposal.def,
+    status: "pending",
+    createdAt: new Date().toISOString()
+  });
+  if (list.length > 50) list.pop();
+  localStorage.setItem(PROPOSALS_SENT_KEY, JSON.stringify(list));
 }
