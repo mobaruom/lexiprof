@@ -1,13 +1,10 @@
 /* ============================================================
    LEXIPROF v10 — APP.JS
-   Fichier unique partagé par les 4 pages (index/app/admin/propose).
+   Fichier unique partagé par les pages (index/app/admin/propose/profile).
    Chaque fonction se protège en vérifiant que les éléments DOM
    dont elle a besoin existent avant d'agir.
    ============================================================ */
 
-/* ============================================================
-   DONNÉES DE SECOURS (si Firebase est injoignable)
-   ============================================================ */
 const defaultData = [
   { id: 1, term: "Management", matiere: "Management", def: "Ensemble des techniques permettant de diriger, organiser et coordonner les ressources d'une organisation afin d'atteindre ses objectifs.", example: "Un manager organise le travail de son équipe, répartit les tâches et suit les résultats.", remember: "Le management consiste notamment à organiser, décider, coordonner et motiver." },
   { id: 2, term: "Leadership", matiere: "Management", def: "Capacité d'une personne à guider, influencer et motiver un groupe d'individus vers la réalisation d'objectifs communs.", example: "Un responsable qui motive son équipe autour d'un projet fait preuve de leadership.", remember: "Leadership = influencer, guider et motiver." },
@@ -20,9 +17,6 @@ const defaultData = [
   { id: 9, term: "GPEC", matiere: "RH", def: "Gestion Prévisionnelle des Emplois et des Compétences. Démarche permettant d'anticiper les besoins futurs d'une organisation en emplois et en compétences.", example: "Une entreprise peut prévoir des formations pour préparer ses salariés à de nouvelles compétences.", remember: "GPEC = anticiper les besoins futurs en emplois et compétences." }
 ];
 
-/* ============================================================
-   ÉTAT GLOBAL
-   ============================================================ */
 let definitions = [];
 let currentFilter = "all";
 let searchQuery = "";
@@ -34,7 +28,6 @@ let editingDefinitionId = null;
 let searchHistory = loadSearchHistory();
 let currentRandomId = null;
 let isDropdownOpen = false;
-let isFocusMode = false;
 let displayedCount = 0;
 let proposalsCache = [];
 let reportsCache = [];
@@ -51,9 +44,7 @@ let focusList = [];
 let focusIndex = 0;
 const BATCH_SIZE = 10;
 
-/* ============================================================
-   UTILITAIRES
-   ============================================================ */
+/* UTILITAIRES */
 function nextId() {
   if (!definitions.length) return 1;
   return Math.max(...definitions.map(d => Number(d.id) || 0)) + 1;
@@ -88,7 +79,7 @@ function normalizeDefinition(d) {
     example: String(d.example || "").trim(),
     remember: String(d.remember || "").trim(),
     source: String(d.source || "").trim(),
-    aliases: Array.isArray(d.aliases) ? d.aliases.map(String) : String(d.aliases || "").split(",").map(alias => alias.trim()).filter(Boolean),
+    aliases: Array.isArray(d.aliases) ? d.aliases.map(String) : String(d.aliases || "").split(",").map(a => a.trim()).filter(Boolean),
     createdAt: d.createdAt || new Date().toISOString(),
     needsReview: Boolean(d.needsReview)
   };
@@ -108,9 +99,6 @@ function highlight(text, q) {
   return safe.replace(new RegExp(`(${escaped})`, "gi"), "<mark>$1</mark>");
 }
 
-/* ============================================================
-   RECHERCHE FLOUE (tolérance aux fautes de frappe)
-   ============================================================ */
 function normalizeText(s) {
   return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
@@ -187,9 +175,6 @@ function getSuggestions(query) {
     .slice(0, 5);
 }
 
-/* ============================================================
-   CHARGEMENT (page dictionnaire)
-   ============================================================ */
 async function loadAndRenderApp() {
   setLoading(true);
   try {
@@ -218,32 +203,16 @@ function setLoading(on) {
   const container = document.getElementById("cardsContainer");
   const skeleton = document.getElementById("skeletonContainer");
   if (!container || !skeleton) return;
-  if (on) {
-    skeleton.style.display = "block";
-    container.style.display = "none";
-  } else {
-    skeleton.style.display = "none";
-    container.style.display = "flex";
-  }
+  if (on) { skeleton.style.display = "block"; container.style.display = "none"; }
+  else { skeleton.style.display = "none"; container.style.display = "flex"; }
 }
 
-/* ============================================================
-   FILTRAGE + PAGINATION
-   ============================================================ */
 function getFilteredDefinitions() {
   const q = searchQuery.trim();
   let filtered = [...definitions];
-
-  if (currentFilter !== "all") {
-    filtered = filtered.filter(d => d.matiere === currentFilter);
-  }
-  if (filterFavoritesOnly) {
-    filtered = filtered.filter(d => favorites.includes(Number(d.id)));
-  }
-  if (filterMasteredOnly) {
-    filtered = filtered.filter(d => masteredDefinitions.includes(Number(d.id)));
-  }
-
+  if (currentFilter !== "all") filtered = filtered.filter(d => d.matiere === currentFilter);
+  if (filterFavoritesOnly) filtered = filtered.filter(d => favorites.includes(Number(d.id)));
+  if (filterMasteredOnly) filtered = filtered.filter(d => masteredDefinitions.includes(Number(d.id)));
   if (q) {
     filtered = filtered
       .map(d => ({ d, score: scoreDefinition(d, q) }))
@@ -260,13 +229,8 @@ function render() {
   const container = document.getElementById("cardsContainer");
   const info = document.getElementById("resultsInfo");
   if (!container) return;
-
   const filtered = getFilteredDefinitions();
-
-  if (searchQuery.trim().length >= 2 && filtered.length === 0) {
-    recordSearchMiss(searchQuery.trim());
-  }
-
+  if (searchQuery.trim().length >= 2 && filtered.length === 0) recordSearchMiss(searchQuery.trim());
   if (info) {
     if (searchQuery || currentFilter !== "all" || filterFavoritesOnly || filterMasteredOnly) {
       info.textContent = `${filtered.length} résultat${filtered.length !== 1 ? "s" : ""}`;
@@ -274,10 +238,8 @@ function render() {
       info.textContent = `${definitions.length} définition${definitions.length !== 1 ? "s" : ""}`;
     }
   }
-
   updateCounter();
   renderProgress();
-
   if (!filtered.length) {
     const suggestions = getSuggestions(searchQuery);
     container.innerHTML = `
@@ -286,13 +248,11 @@ function render() {
         <h3>Aucun résultat</h3>
         <p>Essaie un autre terme ou change le filtre.</p>
         ${suggestions.length ? `<div class="search-suggestions empty-suggestions"><strong>Vous cherchiez peut-être :</strong>${suggestions.map(item => `<button onclick='setSearchQuery(${JSON.stringify(item.term)})'>${escapeHTML(item.term)}</button>`).join("")}</div>` : ""}
-      </div>
-    `;
+      </div>`;
     displayedCount = 0;
     setLoading(false);
     return;
   }
-
   displayedCount = Math.min(BATCH_SIZE, filtered.length);
   renderBatch(filtered, 0, displayedCount);
   setupScrollObserver(filtered);
@@ -302,9 +262,8 @@ function render() {
 function renderBatch(filtered, start, end) {
   const container = document.getElementById("cardsContainer");
   if (!container) return;
-  if (start === 0) {
-    container.innerHTML = filtered.slice(start, end).map((d, i) => createCardHTML(d, i)).join("");
-  } else {
+  if (start === 0) container.innerHTML = filtered.slice(start, end).map((d, i) => createCardHTML(d, i)).join("");
+  else {
     const html = filtered.slice(start, end).map((d, i) => createCardHTML(d, start + i)).join("");
     container.insertAdjacentHTML("beforeend", html);
   }
@@ -326,9 +285,6 @@ function setupScrollObserver(filtered) {
   window._scrollObserver.observe(sentinel);
 }
 
-/* ============================================================
-   CARTE
-   ============================================================ */
 function createCardHTML(d, index) {
   const isFav = favorites.includes(Number(d.id));
   const isMastered = masteredDefinitions.includes(Number(d.id));
@@ -359,8 +315,7 @@ function createCardHTML(d, index) {
         ${sourceUrl ? `<div class="extra-block source-block"><h4>🔗 Source</h4><a href="${escapeHTML(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(d.source)}</a></div>` : ""}
         ${d.aliases?.length ? `<div class="extra-block"><h4>🔎 Aussi appelé</h4><p>${d.aliases.map(escapeHTML).join(" · ")}</p></div>` : ""}
       </div>
-    </article>
-  `;
+    </article>`;
 }
 
 function toggleMastered(id) {
@@ -370,13 +325,9 @@ function toggleMastered(id) {
   showToast(result.mastered ? "✅ Notion marquée comme maîtrisée !" : "↩️ Notion remise à revoir.");
 }
 
-/* ============================================================
-   SIGNALEMENT (vraie modale)
-   ============================================================ */
 function openReportModal(id) {
   const d = definitions.find(item => Number(item.id) === Number(id));
   if (!d) return;
-
   let modal = document.getElementById("reportModal");
   if (!modal) {
     modal = document.createElement("div");
@@ -389,9 +340,7 @@ function openReportModal(id) {
           <button class="btn-close" onclick="closeReportModal()" aria-label="Fermer">×</button>
         </div>
         <div class="auth-body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
-            Terme : <strong id="reportTermName"></strong>
-          </p>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Terme : <strong id="reportTermName"></strong></p>
           <div class="form-row">
             <label>Motif</label>
             <div class="report-reasons">
@@ -406,12 +355,10 @@ function openReportModal(id) {
           </div>
           <button class="btn-add" onclick="submitReport()">Envoyer le signalement</button>
         </div>
-      </div>
-    `;
+      </div>`;
     document.body.appendChild(modal);
     modal.addEventListener("click", e => { if (e.target === modal) closeReportModal(); });
   }
-
   document.getElementById("reportTermName").textContent = d.term;
   document.getElementById("reportMessage").value = "";
   document.querySelectorAll(".report-reason").forEach(b => b.classList.remove("active"));
@@ -433,11 +380,9 @@ async function submitReport() {
   const definitionId = Number(modal.dataset.definitionId);
   const d = definitions.find(item => Number(item.id) === definitionId);
   if (!d) return;
-
   const reasonBtn = modal.querySelector(".report-reason.active");
   const reason = reasonBtn ? reasonBtn.dataset.reason : "autre";
   const message = document.getElementById("reportMessage")?.value.trim() || "";
-
   try {
     await submitReportAtomic({ definitionId, term: d.term, message, reason });
     closeReportModal();
@@ -447,48 +392,29 @@ async function submitReport() {
   }
 }
 
-/* ============================================================
-   PROGRESSION
-   ============================================================ */
 function renderProgress() {
   const panel = document.getElementById("progressPanel");
   if (!panel) return;
   const count = definitions.filter(d => masteredDefinitions.includes(Number(d.id))).length;
   const percentage = definitions.length ? Math.round((count / definitions.length) * 100) : 0;
   const subjects = ["Management", "Droit", "Économie", "RH"];
-  panel.innerHTML = `<div class="progress-heading"><span>🎯 Ma progression</span><strong>${count} / ${definitions.length} maîtrisée${count !== 1 ? "s" : ""}</strong></div><div class="progress-bar" aria-label="${percentage}% des définitions maîtrisées"><span style="width:${percentage}%"></span></div><div class="progress-subjects">${subjects.map(subject => { const total = definitions.filter(d => d.matiere === subject).length; const mastered = definitions.filter(d => d.matiere === subject && masteredDefinitions.includes(Number(d.id))).length; return total ? `<span>${escapeHTML(subject)} <b>${mastered}/${total}</b></span>` : ""; }).join("")}</div>`;
+  panel.innerHTML = `<div class="progress-heading"><span>🎯 Ma progression</span><strong>${count} / ${definitions.length} maîtrisée${count !== 1 ? "s" : ""}</strong></div><div class="progress-bar"><span style="width:${percentage}%"></span></div><div class="progress-subjects">${subjects.map(s => { const total = definitions.filter(d => d.matiere === s).length; const mastered = definitions.filter(d => d.matiere === s && masteredDefinitions.includes(Number(d.id))).length; return total ? `<span>${escapeHTML(s)} <b>${mastered}/${total}</b></span>` : ""; }).join("")}</div>`;
 }
 
-/* ============================================================
-   FICHE DÉPLIABLE
-   ============================================================ */
 function toggleCard(id, btn) {
   const extra = document.getElementById(`card-${id}`);
   if (!extra) return;
   const open = extra.classList.contains("open");
-  if (open) {
-    extra.classList.remove("open");
-    btn.innerHTML = "📖 Ouvrir la fiche";
-  } else {
-    extra.classList.add("open");
-    btn.innerHTML = "📕 Fermer la fiche";
-    commitSearchHistory();
-  }
+  if (open) { extra.classList.remove("open"); btn.innerHTML = "📖 Ouvrir la fiche"; }
+  else { extra.classList.add("open"); btn.innerHTML = "📕 Fermer la fiche"; commitSearchHistory(); }
 }
 
-/* ============================================================
-   COPIER / PARTAGER
-   ============================================================ */
 async function copyDefinition(id) {
   const d = definitions.find(x => Number(x.id) === Number(id));
   if (!d) return;
   const text = `${d.term} (${d.matiere})\n${d.def}${d.example ? `\n💡 Exemple : ${d.example}` : ""}${d.remember ? `\n📝 À retenir : ${d.remember}` : ""}`;
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast("📋 Définition copiée !");
-  } catch (e) {
-    showToast("⚠️ Impossible de copier");
-  }
+  try { await navigator.clipboard.writeText(text); showToast("📋 Définition copiée !"); }
+  catch (e) { showToast("⚠️ Impossible de copier"); }
 }
 
 async function shareDefinition(id) {
@@ -499,12 +425,8 @@ async function shareDefinition(id) {
   if (navigator.share) {
     try { await navigator.share({ title: `LexiProf — ${d.term}`, text, url }); } catch (e) {}
   } else {
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast("🔗 Lien copié !");
-    } catch (e) {
-      showToast("⚠️ Impossible de partager");
-    }
+    try { await navigator.clipboard.writeText(url); showToast("🔗 Lien copié !"); }
+    catch (e) { showToast("⚠️ Impossible de partager"); }
   }
 }
 
@@ -519,31 +441,19 @@ function checkHash() {
   }, 600);
 }
 
-/* ============================================================
-   RECHERCHE
-   ============================================================ */
 function onSearch() {
   const input = document.getElementById("searchInput");
   if (!input) return;
   searchQuery = input.value;
   updateSearchClear();
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    displayedCount = 0;
-    render();
-    renderSearchSuggestions();
-  }, 150);
+  searchTimer = setTimeout(() => { displayedCount = 0; render(); renderSearchSuggestions(); }, 150);
 }
 
 function clearSearch() {
   const input = document.getElementById("searchInput");
   if (!input) return;
-  input.value = "";
-  searchQuery = "";
-  updateSearchClear();
-  displayedCount = 0;
-  render();
-  input.focus();
+  input.value = ""; searchQuery = ""; updateSearchClear(); displayedCount = 0; render(); input.focus();
 }
 
 function updateSearchClear() {
@@ -577,42 +487,24 @@ function renderSearchSuggestions() {
 function renderSearchHistory() {
   const container = document.getElementById("searchHistory");
   if (!container) return;
-  if (!searchHistory.length) {
-    container.classList.remove("visible");
-    return;
-  }
+  if (!searchHistory.length) { container.classList.remove("visible"); return; }
   container.classList.add("visible");
-  container.innerHTML = searchHistory.map(q => `
-    <button onclick='setSearchQuery(${JSON.stringify(q)})'>${escapeHTML(q)}</button>
-  `).join("");
+  container.innerHTML = searchHistory.map(q => `<button onclick='setSearchQuery(${JSON.stringify(q)})'>${escapeHTML(q)}</button>`).join("");
 }
 
 function setSearchQuery(q) {
   const input = document.getElementById("searchInput");
   if (input) input.value = q;
-  searchQuery = q;
-  updateSearchClear();
-  displayedCount = 0;
-  render();
-  commitSearchHistory();
+  searchQuery = q; updateSearchClear(); displayedCount = 0; render(); commitSearchHistory();
 }
 
-/* ============================================================
-   LIENS AUTOMATIQUES ENTRE TERMES
-   ============================================================ */
 function jumpToTerm(term) {
   const input = document.getElementById("searchInput");
   if (input) input.value = term;
-  searchQuery = term;
-  updateSearchClear();
-  displayedCount = 0;
-  render();
+  searchQuery = term; updateSearchClear(); displayedCount = 0; render();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-/* ============================================================
-   FILTRES DROPDOWN
-   ============================================================ */
 function toggleFilterDropdown() {
   const menu = document.getElementById("filterDropdownMenu");
   const btn = document.getElementById("filterDropdownBtn");
@@ -624,10 +516,8 @@ function toggleFilterDropdown() {
 
 function setFilterFromDropdown(filter, btn) {
   currentFilter = filter;
-
   document.querySelectorAll(".filter-dropdown-item").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
-
   const label = document.getElementById("filterDropdownLabel");
   const dot = document.getElementById("filterDropdownDot");
   if (label) {
@@ -638,13 +528,10 @@ function setFilterFromDropdown(filter, btn) {
     const colors = { all: "var(--text)", Management: "var(--mgt)", Droit: "var(--drt)", Économie: "var(--eco)", RH: "var(--rh)" };
     dot.style.background = colors[filter] || "var(--text)";
   }
-
   isDropdownOpen = false;
   document.getElementById("filterDropdownMenu")?.classList.remove("open");
   document.getElementById("filterDropdownBtn")?.classList.remove("open");
-
-  displayedCount = 0;
-  render();
+  displayedCount = 0; render();
 }
 
 function toggleQuickFilter(type) {
@@ -652,8 +539,7 @@ function toggleQuickFilter(type) {
   if (type === "mastered") filterMasteredOnly = !filterMasteredOnly;
   document.getElementById("quickFavorites")?.classList.toggle("active", filterFavoritesOnly);
   document.getElementById("quickMastered")?.classList.toggle("active", filterMasteredOnly);
-  displayedCount = 0;
-  render();
+  displayedCount = 0; render();
 }
 
 document.addEventListener("click", (e) => {
@@ -665,9 +551,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-/* ============================================================
-   FAVORIS (locaux)
-   ============================================================ */
 function toggleFavorite(id) {
   const result = toggleFavoriteLocal(id);
   favorites = loadFavoritesLocal();
@@ -681,9 +564,6 @@ function updateCounter() {
   counter.textContent = `${definitions.length} définition${definitions.length !== 1 ? "s" : ""} disponible${definitions.length !== 1 ? "s" : ""}`;
 }
 
-/* ============================================================
-   MODE SOMBRE
-   ============================================================ */
 function initTheme() {
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === "dark") document.body.classList.add("dark");
@@ -705,9 +585,6 @@ function updateThemeButton() {
   btn.title = dark ? "Mode clair" : "Mode sombre";
 }
 
-/* ============================================================
-   MODE FOCUS — lecteur immersif plein écran
-   ============================================================ */
 function toggleFocusMode() {
   focusList = getFilteredDefinitions();
   if (!focusList.length) { showToast("⚠️ Aucune définition à afficher."); return; }
@@ -718,38 +595,28 @@ function toggleFocusMode() {
   renderFocusCard(false);
 }
 
-function closeFocusMode() {
-  document.getElementById("focusOverlay")?.classList.remove("open");
-}
+function closeFocusMode() { document.getElementById("focusOverlay")?.classList.remove("open"); }
 
 function renderFocusCard(animate = true) {
   const d = focusList[focusIndex];
   if (!d) return;
   const card = document.getElementById("focusCard");
   if (!card) return;
-
   const paint = () => {
     document.getElementById("focusMatiere").textContent = d.matiere;
     document.getElementById("focusMatiere").className = `focus-matiere badge-${d.matiere}`;
     document.getElementById("focusTerm").textContent = d.term;
     document.getElementById("focusDef").textContent = d.def;
-
-    const extraWrap = document.getElementById("focusExtra");
-    extraWrap.innerHTML = `
+    document.getElementById("focusExtra").innerHTML = `
       ${d.example ? `<div class="extra-block"><h4>💡 Exemple concret</h4><p>${escapeHTML(d.example)}</p></div>` : ""}
-      ${d.remember ? `<div class="extra-block"><h4>📝 À retenir</h4><p>${escapeHTML(d.remember)}</p></div>` : ""}
-    `;
-
+      ${d.remember ? `<div class="extra-block"><h4>📝 À retenir</h4><p>${escapeHTML(d.remember)}</p></div>` : ""}`;
     document.getElementById("focusCounter").textContent = `${focusIndex + 1} / ${focusList.length}`;
-
     const isFav = favorites.includes(Number(d.id));
     const favBtn = document.getElementById("focusFavBtn");
     favBtn.classList.toggle("active", isFav);
     favBtn.querySelector(".heart-icon").textContent = isFav ? "❤️" : "🤍";
   };
-
   if (!animate) { paint(); return; }
-
   card.classList.add("focus-card-out");
   setTimeout(() => {
     paint();
@@ -759,17 +626,8 @@ function renderFocusCard(animate = true) {
   }, 180);
 }
 
-function focusNext() {
-  if (!focusList.length) return;
-  focusIndex = (focusIndex + 1) % focusList.length;
-  renderFocusCard(true);
-}
-
-function focusPrev() {
-  if (!focusList.length) return;
-  focusIndex = (focusIndex - 1 + focusList.length) % focusList.length;
-  renderFocusCard(true);
-}
+function focusNext() { if (!focusList.length) return; focusIndex = (focusIndex + 1) % focusList.length; renderFocusCard(true); }
+function focusPrev() { if (!focusList.length) return; focusIndex = (focusIndex - 1 + focusList.length) % focusList.length; renderFocusCard(true); }
 
 function focusToggleFavorite() {
   const d = focusList[focusIndex];
@@ -781,47 +639,8 @@ function focusToggleFavorite() {
   favBtn.querySelector(".heart-icon").textContent = isFav ? "❤️" : "🤍";
 }
 
-/* ============================================================
-   AUTH COSMÉTIQUE (index.html)
-   ============================================================ */
-function openAuthModal() {
-  document.getElementById("authOverlay")?.classList.add("open");
-}
-
-function closeAuthModal() {
-  document.getElementById("authOverlay")?.classList.remove("open");
-}
-
-function switchAuthTab(tab) {
-  const loginTab = document.getElementById("authTabLogin");
-  const registerTab = document.getElementById("authTabRegister");
-  const loginForm = document.getElementById("loginForm");
-  const registerForm = document.getElementById("registerForm");
-  if (tab === "login") {
-    loginTab?.classList.add("active");
-    registerTab?.classList.remove("active");
-    loginForm?.classList.add("active");
-    registerForm?.classList.remove("active");
-  } else {
-    loginTab?.classList.remove("active");
-    registerTab?.classList.add("active");
-    loginForm?.classList.remove("active");
-    registerForm?.classList.add("active");
-  }
-}
-
-function handleCosmeticAuth() {
-  closeAuthModal();
-  showToast("👋 Les comptes arrivent bientôt !");
-}
-
-/* ============================================================
-   ADMIN — VERROUILLAGE
-   ============================================================ */
 function initAdminPage() {
-  if (sessionStorage.getItem("lexiprof_admin_unlocked") === "1") {
-    unlockAdminUI();
-  }
+  if (sessionStorage.getItem("lexiprof_admin_unlocked") === "1") unlockAdminUI();
 }
 
 function checkAdminPasswordPage() {
@@ -858,20 +677,13 @@ function lockAdmin() {
 }
 
 async function initAdminData() {
-  try {
-    clearCache("defs");
-    await loadRemote();
-    syncIdCounter();
-  } catch (e) { console.error(e); }
+  try { clearCache("defs"); await loadRemote(); syncIdCounter(); } catch (e) { console.error(e); }
   renderAdminList();
   renderExportReminder();
   await loadProposalsList();
   await loadReportsList();
 }
 
-/* ============================================================
-   ADMIN — RAPPEL EXPORT
-   ============================================================ */
 function renderExportReminder() {
   const adminContent = document.getElementById("adminContent");
   if (!adminContent) return;
@@ -881,16 +693,10 @@ function renderExportReminder() {
   if (days === null || days < 7) return;
   const banner = document.createElement("div");
   banner.className = "export-reminder";
-  banner.innerHTML = `
-    <span>⚠️ Dernier export il y a <strong>${days} jours</strong>. Pense à sauvegarder.</span>
-    <button onclick="exportJson()">📤 Exporter maintenant</button>
-  `;
+  banner.innerHTML = `<span>⚠️ Dernier export il y a <strong>${days} jours</strong>. Pense à sauvegarder.</span><button onclick="exportJson()">📤 Exporter maintenant</button>`;
   adminContent.insertBefore(banner, adminContent.firstChild);
 }
 
-/* ============================================================
-   ADMIN — LISTE DES DÉFINITIONS
-   ============================================================ */
 function onAdminSearch() {
   const input = document.getElementById("adminSearchInput");
   adminSearchQuery = input ? input.value : "";
@@ -899,7 +705,7 @@ function onAdminSearch() {
 
 function setAdminFilter(subject) {
   adminSubjectFilter = subject;
-  document.querySelectorAll("[data-admin-subject]").forEach(button => button.classList.toggle("active", button.dataset.adminSubject === subject));
+  document.querySelectorAll("[data-admin-subject]").forEach(b => b.classList.toggle("active", b.dataset.adminSubject === subject));
   renderAdminList();
 }
 
@@ -914,12 +720,10 @@ function renderQualityDashboard() {
   if (!dashboard) return;
   const missing = field => definitions.filter(d => !String(d[field] || "").trim()).length;
   const subjects = ["Management", "Droit", "Économie", "RH"]
-    .map(subject => `${subject} <b>${definitions.filter(d => d.matiere === subject).length}</b>`)
-    .join(" · ");
+    .map(s => `${s} <b>${definitions.filter(d => d.matiere === s).length}</b>`).join(" · ");
   const review = definitions.filter(d => d.needsReview).length;
   const quasiDupes = findQuasiDuplicates();
   const misses = getTopSearchMisses(5);
-
   dashboard.innerHTML = `
     <div class="quality-title">📊 Qualité du dictionnaire</div>
     <p>${subjects}</p>
@@ -930,23 +734,8 @@ function renderQualityDashboard() {
       <span>À vérifier <b>${review}</b></span>
       <span>Quasi-doublons <b>${quasiDupes.length}</b></span>
     </div>
-    ${quasiDupes.length ? `
-      <details style="margin-top:10px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--accent)">Voir les quasi-doublons (${quasiDupes.length})</summary>
-        <ul style="margin-top:8px;padding-left:18px;font-size:11px">
-          ${quasiDupes.map(([a, b]) => `<li>« ${escapeHTML(a.term)} » ↔ « ${escapeHTML(b.term)} »</li>`).join("")}
-        </ul>
-      </details>
-    ` : ""}
-    ${misses.length ? `
-      <details style="margin-top:10px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--drt)">Termes demandés mais absents (${misses.length})</summary>
-        <ul style="margin-top:8px;padding-left:18px;font-size:11px">
-          ${misses.map(m => `<li>« ${escapeHTML(m.term)} » — ${m.count} recherche(s)</li>`).join("")}
-        </ul>
-      </details>
-    ` : ""}
-  `;
+    ${quasiDupes.length ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:var(--accent)">Voir les quasi-doublons (${quasiDupes.length})</summary><ul style="margin-top:8px;padding-left:18px;font-size:11px">${quasiDupes.map(([a, b]) => `<li>« ${escapeHTML(a.term)} » ↔ « ${escapeHTML(b.term)} »</li>`).join("")}</ul></details>` : ""}
+    ${misses.length ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:var(--drt)">Termes demandés mais absents (${misses.length})</summary><ul style="margin-top:8px;padding-left:18px;font-size:11px">${misses.map(m => `<li>« ${escapeHTML(m.term)} » — ${m.count} recherche(s)</li>`).join("")}</ul></details>` : ""}`;
 }
 
 function renderAdminList() {
@@ -954,24 +743,16 @@ function renderAdminList() {
   const count = document.getElementById("adminCount");
   if (!list) return;
   if (count) count.textContent = definitions.length;
-
   let sorted = [...definitions].sort((a, b) => a.term.localeCompare(b.term, "fr"));
-
   const q = adminSearchQuery.trim();
-  if (q) {
-    sorted = sorted.filter(d =>
-      fuzzyIncludes(d.term, q) || fuzzyIncludes(d.matiere, q) || fuzzyIncludes(d.def, q)
-    );
-  }
+  if (q) sorted = sorted.filter(d => fuzzyIncludes(d.term, q) || fuzzyIncludes(d.matiere, q) || fuzzyIncludes(d.def, q));
   if (adminSubjectFilter !== "all") sorted = sorted.filter(d => d.matiere === adminSubjectFilter);
   if (adminReviewOnly) sorted = sorted.filter(d => d.needsReview);
   renderQualityDashboard();
-
   if (!sorted.length) {
     list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">${q ? "Aucun résultat pour cette recherche." : "Aucune définition."}</p>`;
     return;
   }
-
   list.innerHTML = sorted.map(d => `
     <div class="admin-item">
       <div>
@@ -982,8 +763,7 @@ function renderAdminList() {
         <button class="btn-edit" onclick="editDefinition(${d.id})" title="Modifier">✎</button>
         <button class="btn-del" onclick="deleteDefinition(${d.id})" title="Supprimer">✕</button>
       </div>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
 function handleFormAction() {
@@ -1006,21 +786,16 @@ async function addDefinition() {
   const term = document.getElementById("formTerm")?.value.trim();
   const matiere = document.getElementById("formMatiere")?.value;
   const def = document.getElementById("formDef")?.value.trim();
-
   if (!term || !def) { showToast("⚠️ Remplis le terme et la définition !"); return; }
-
   const duplicate = definitions.find(d => d.term.toLowerCase() === term.toLowerCase() && d.matiere === matiere);
   if (duplicate) { showToast("⚠️ Ce terme existe déjà."); return; }
-
   const example = document.getElementById("formExample")?.value.trim() || "";
   const remember = document.getElementById("formRemember")?.value.trim() || "";
   const source = document.getElementById("formSource")?.value.trim() || "";
-
   const aliases = document.getElementById("formAliases")?.value || "";
   const needsReview = Boolean(document.getElementById("formNeedsReview")?.checked);
   const newDef = normalizeDefinition({ id: getNextStableId(), term, matiere, def, example, remember, source, aliases, needsReview, createdAt: new Date().toISOString() });
   definitions.push(newDef);
-
   try {
     showToast("⏳ Sauvegarde...");
     await saveDefinitionsRemote();
@@ -1048,7 +823,6 @@ function clearDefinitionForm() {
 function editDefinition(id) {
   const d = definitions.find(x => Number(x.id) === Number(id));
   if (!d) return;
-
   const term = document.getElementById("formTerm");
   const matiere = document.getElementById("formMatiere");
   const def = document.getElementById("formDef");
@@ -1065,16 +839,13 @@ function editDefinition(id) {
   if (aliases) aliases.value = (d.aliases || []).join(", ");
   const review = document.getElementById("formNeedsReview");
   if (review) review.checked = Boolean(d.needsReview);
-
   editingDefinitionId = Number(id);
-
   const btnFormAction = document.getElementById("btnFormAction");
   const btnCancelEdit = document.getElementById("btnCancelEdit");
   const formTitle = document.getElementById("formTitle");
   if (btnFormAction) btnFormAction.textContent = "💾 Enregistrer les modifications";
   if (btnCancelEdit) btnCancelEdit.style.display = "block";
   if (formTitle) formTitle.textContent = "Modifier la définition";
-
   showToast("✏️ Modification en cours");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1082,10 +853,8 @@ function editDefinition(id) {
 async function saveEditedDefinition() {
   const id = editingDefinitionId;
   if (!id) { await addDefinition(); return; }
-
   const d = definitions.find(x => Number(x.id) === Number(id));
   if (!d) return;
-
   const backup = { ...d };
   d.term = document.getElementById("formTerm")?.value.trim();
   d.matiere = document.getElementById("formMatiere")?.value;
@@ -1095,7 +864,6 @@ async function saveEditedDefinition() {
   d.source = document.getElementById("formSource")?.value.trim() || "";
   d.aliases = String(document.getElementById("formAliases")?.value || "").split(",").map(item => item.trim()).filter(Boolean);
   d.needsReview = Boolean(document.getElementById("formNeedsReview")?.checked);
-
   try {
     await saveDefinitionsRemote();
     editingDefinitionId = null;
@@ -1116,60 +884,30 @@ async function saveEditedDefinition() {
 
 async function deleteDefinition(id) {
   if (!confirm("Supprimer cette définition ?")) return;
-
   const backup = [...definitions];
   definitions = definitions.filter(d => Number(d.id) !== Number(id));
-
-  try {
-    await saveDefinitionsRemote();
-    renderAdminList();
-    showToast("🗑 Définition supprimée.");
-  } catch (error) {
-    definitions = backup;
-    showToast("⚠️ Erreur de sauvegarde.");
-  }
+  try { await saveDefinitionsRemote(); renderAdminList(); showToast("🗑 Définition supprimée."); }
+  catch (error) { definitions = backup; showToast("⚠️ Erreur de sauvegarde."); }
 }
 
 async function deleteAllDefinitions() {
   if (!definitions.length) { showToast("⚠️ Aucune définition à supprimer."); return; }
-
   exportJson(true);
-
-  const confirmation = prompt(
-    `⚠️ Ceci va supprimer DÉFINITIVEMENT les ${definitions.length} définitions du site.\nTape SUPPRIMER (en majuscules) pour confirmer.`
-  );
-  if (confirmation !== "SUPPRIMER") {
-    showToast("❌ Suppression annulée.");
-    return;
-  }
-
+  const confirmation = prompt(`⚠️ Ceci va supprimer DÉFINITIVEMENT les ${definitions.length} définitions.\nTape SUPPRIMER pour confirmer.`);
+  if (confirmation !== "SUPPRIMER") { showToast("❌ Suppression annulée."); return; }
   const backup = [...definitions];
   definitions = [];
-
-  try {
-    await saveDefinitionsRemote();
-    renderAdminList();
-    showToast("🗑 Toutes les définitions ont été supprimées. Une sauvegarde JSON a été téléchargée.");
-  } catch (e) {
-    definitions = backup;
-    showToast("⚠️ Erreur de sauvegarde : " + (e.message || "réessaie."));
-  }
+  try { await saveDefinitionsRemote(); renderAdminList(); showToast("🗑 Toutes les définitions ont été supprimées."); }
+  catch (e) { definitions = backup; showToast("⚠️ Erreur de sauvegarde : " + (e.message || "réessaie.")); }
 }
 
-/* ============================================================
-   ADMIN — MOT DE PASSE
-   ============================================================ */
-function toggleChangePwd() {
-  document.getElementById("changePwdForm")?.classList.toggle("open");
-}
+function toggleChangePwd() { document.getElementById("changePwdForm")?.classList.toggle("open"); }
 
 function changePassword() {
   const p1 = document.getElementById("newPwd1")?.value;
   const p2 = document.getElementById("newPwd2")?.value;
-
   if (!p1 || p1.length < 4) { showToast("⚠️ Minimum 4 caractères."); return; }
   if (p1 !== p2) { showToast("⚠️ Les mots de passe ne correspondent pas."); return; }
-
   setAdminPassword(p1);
   document.getElementById("newPwd1").value = "";
   document.getElementById("newPwd2").value = "";
@@ -1177,20 +915,13 @@ function changePassword() {
   showToast("🔑 Mot de passe mis à jour !");
 }
 
-/* ============================================================
-   ADMIN — IMPORT / EXPORT JSON
-   ============================================================ */
 function importJson() {
   const input = document.getElementById("jsonImport");
   if (!input || !input.files || !input.files[0]) { showToast("⚠️ Sélectionne un fichier JSON."); return; }
   const reader = new FileReader();
   reader.onload = async e => {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      await processImport(parsed);
-    } catch (error) {
-      showToast("❌ JSON invalide.");
-    }
+    try { const parsed = JSON.parse(e.target.result); await processImport(parsed); }
+    catch (error) { showToast("❌ JSON invalide."); }
   };
   reader.readAsText(input.files[0]);
   input.value = "";
@@ -1201,26 +932,18 @@ function handleJSONImport() {
   if (!textarea) return;
   const text = textarea.value.trim();
   if (!text) { showToast("⚠️ Colle d'abord ton JSON."); return; }
-  try {
-    const parsed = JSON.parse(text);
-    processImport(parsed).then(() => { textarea.value = ""; });
-  } catch (error) {
-    showToast("❌ JSON invalide ou mauvais format.");
-  }
+  try { const parsed = JSON.parse(text); processImport(parsed).then(() => { textarea.value = ""; }); }
+  catch (error) { showToast("❌ JSON invalide ou mauvais format."); }
 }
 
-function definitionKey(d) {
-  return `${normalizeText(d.term)}|${normalizeText(d.matiere)}`;
-}
+function definitionKey(d) { return `${normalizeText(d.term)}|${normalizeText(d.matiere)}`; }
 
 function processImport(parsed) {
   const imported = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.definitions) ? parsed.definitions : []);
   if (!imported.length) { showToast("⚠️ Aucune définition trouvée."); return; }
-
   const existing = new Map(definitions.map(d => [definitionKey(d), d]));
   const valid = [];
-  let duplicates = 0;
-  let invalid = 0;
+  let duplicates = 0, invalid = 0;
   imported.forEach(raw => {
     const d = normalizeDefinition(raw || {});
     if (!d.term || !d.def) { invalid++; return; }
@@ -1249,19 +972,13 @@ async function confirmImport() {
       existingByKey.set(key, definitions.length - 1);
     }
   });
-
   try {
     await saveDefinitionsRemote();
-    syncIdCounter();
-    buildSearchIndex();
-    renderAdminList();
+    syncIdCounter(); buildSearchIndex(); renderAdminList();
     document.getElementById("importPreview").style.display = "none";
     showToast(`✅ Import terminé : ${pendingImport.valid.length} nouvelle(s).`);
     pendingImport = null;
-  } catch (e) {
-    definitions = backup;
-    showToast("⚠️ " + (e.message || "Erreur d'import."));
-  }
+  } catch (e) { definitions = backup; showToast("⚠️ " + (e.message || "Erreur d'import.")); }
 }
 
 function cancelImport() { pendingImport = null; const preview = document.getElementById("importPreview"); if (preview) preview.style.display = "none"; }
@@ -1270,25 +987,16 @@ function exportJson(silent = false) {
   const blob = new Blob([JSON.stringify(definitions, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "lexiprof-definitions.json";
-  a.click();
+  a.href = url; a.download = "lexiprof-definitions.json"; a.click();
   URL.revokeObjectURL(url);
   localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
   if (!silent) showToast("📦 JSON exporté !");
   renderExportReminder();
 }
 
-/* ============================================================
-   ADMIN — PROPOSITIONS EN ATTENTE
-   ============================================================ */
 async function loadProposalsList() {
-  try {
-    proposalsCache = await fetchProposalsRemote();
-  } catch (e) {
-    proposalsCache = [];
-    console.warn("Propositions indisponibles:", e.message);
-  }
+  try { proposalsCache = await fetchProposalsRemote(); }
+  catch (e) { proposalsCache = []; console.warn("Propositions indisponibles:", e.message); }
   renderProposalsList();
 }
 
@@ -1296,23 +1004,9 @@ function renderProposalsList() {
   const list = document.getElementById("proposalsList");
   const badge = document.getElementById("proposalsCount");
   if (!list) return;
-
   const pending = proposalsCache.filter(p => p.status === "pending");
-
-  if (badge) {
-    if (pending.length) {
-      badge.style.display = "inline-flex";
-      badge.textContent = pending.length;
-    } else {
-      badge.style.display = "none";
-    }
-  }
-
-  if (!pending.length) {
-    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucune proposition en attente.</p>`;
-    return;
-  }
-
+  if (badge) { if (pending.length) { badge.style.display = "inline-flex"; badge.textContent = pending.length; } else badge.style.display = "none"; }
+  if (!pending.length) { list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucune proposition en attente.</p>`; return; }
   list.innerHTML = pending.map(p => `
     <div class="admin-item" style="flex-direction:column;align-items:stretch">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
@@ -1326,30 +1020,20 @@ function renderProposalsList() {
         </div>
       </div>
       <p class="proposal-item-def">${escapeHTML(p.def)}</p>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
 async function approveProposal(id) {
   const p = proposalsCache.find(x => Number(x.id) === Number(id));
   if (!p) return;
-
-  const newDef = normalizeDefinition({
-    id: getNextStableId(),
-    term: p.term, matiere: p.matiere, def: p.def,
-    example: p.example || "", remember: p.remember || "",
-    source: p.source || "", aliases: p.aliases || [],
-    createdAt: new Date().toISOString()
-  });
+  const newDef = normalizeDefinition({ id: getNextStableId(), term: p.term, matiere: p.matiere, def: p.def, example: p.example || "", remember: p.remember || "", source: p.source || "", aliases: p.aliases || [], createdAt: new Date().toISOString() });
   definitions.push(newDef);
-
   try {
     await saveDefinitionsRemote();
     await deleteProposalRemote(p);
     syncIdCounter();
     proposalsCache = proposalsCache.filter(x => Number(x.id) !== Number(id));
-    renderAdminList();
-    renderProposalsList();
+    renderAdminList(); renderProposalsList();
     showToast("✅ Définition ajoutée !");
   } catch (e) {
     definitions = definitions.filter(d => d.id !== newDef.id);
@@ -1362,14 +1046,8 @@ async function rejectProposal(id) {
   if (!proposal) return;
   const backup = [...proposalsCache];
   proposalsCache = proposalsCache.filter(x => Number(x.id) !== Number(id));
-  try {
-    await deleteProposalRemote(proposal);
-    renderProposalsList();
-    showToast("🗑 Proposition refusée.");
-  } catch (e) {
-    proposalsCache = backup;
-    showToast("⚠️ Erreur de sauvegarde.");
-  }
+  try { await deleteProposalRemote(proposal); renderProposalsList(); showToast("🗑 Proposition refusée."); }
+  catch (e) { proposalsCache = backup; showToast("⚠️ Erreur de sauvegarde."); }
 }
 
 async function loadReportsList() {
@@ -1381,21 +1059,21 @@ function renderReportsList() {
   const list = document.getElementById("reportsList");
   const badge = document.getElementById("reportsCount");
   if (!list) return;
-  const pending = reportsCache.filter(report => report.status === "pending");
+  const pending = reportsCache.filter(r => r.status === "pending");
   if (badge) { badge.style.display = pending.length ? "inline-flex" : "none"; badge.textContent = pending.length; }
-  list.innerHTML = pending.length ? pending.map(report => `
+  list.innerHTML = pending.length ? pending.map(r => `
     <div class="admin-item" style="flex-direction:column;align-items:stretch">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-        <div><div class="admin-item-term">${escapeHTML(report.term)}</div><div class="admin-item-meta">Signalement · ${escapeHTML(report.reason || "autre")}</div></div>
-        <button class="btn-reject" onclick="dismissReport(${report.id})" title="Traiter">✓</button>
+        <div><div class="admin-item-term">${escapeHTML(r.term)}</div><div class="admin-item-meta">Signalement · ${escapeHTML(r.reason || "autre")}</div></div>
+        <button class="btn-reject" onclick="dismissReport(${r.id})" title="Traiter">✓</button>
       </div>
-      <p class="proposal-item-def">${escapeHTML(report.message || "(aucun détail)")}</p>
+      <p class="proposal-item-def">${escapeHTML(r.message || "(aucun détail)")}</p>
     </div>`).join("") : `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;">Aucun signalement en attente.</p>`;
 }
 
 async function dismissReport(id) {
   const backup = [...reportsCache];
-  reportsCache = reportsCache.map(report => Number(report.id) === Number(id) ? { ...report, status: "resolved" } : report);
+  reportsCache = reportsCache.map(r => Number(r.id) === Number(id) ? { ...r, status: "resolved" } : r);
   try {
     const report = reportsCache.find(item => Number(item.id) === Number(id));
     await updateReportRemote(report);
@@ -1404,22 +1082,13 @@ async function dismissReport(id) {
   } catch (e) { reportsCache = backup; showToast("⚠️ Erreur de sauvegarde."); }
 }
 
-/* ============================================================
-   PAGE PROPOSER (propose.html)
-   ============================================================ */
 async function handleProposalSubmit() {
   const honeypot = document.getElementById("pWebsite")?.value;
-  if (honeypot) {
-    showProposalSuccess();
-    return;
-  }
-
+  if (honeypot) { showProposalSuccess(); return; }
   const term = document.getElementById("pTerm")?.value.trim();
   const matiere = document.getElementById("pMatiere")?.value;
   const def = document.getElementById("pDef")?.value.trim();
-
   if (!term || !def) { showToast("⚠️ Remplis au moins le terme et la définition."); return; }
-
   const proposal = {
     term, matiere, def,
     example: document.getElementById("pExample")?.value.trim() || "",
@@ -1428,14 +1097,11 @@ async function handleProposalSubmit() {
     pseudo: document.getElementById("pPseudo")?.value.trim() || "",
     email: document.getElementById("pEmail")?.value.trim() || ""
   };
-
   try {
     showToast("⏳ Envoi...");
     await submitProposalAtomic(proposal);
     showProposalSuccess();
-  } catch (e) {
-    showToast("⚠️ " + (e.message || "Erreur d'envoi."));
-  }
+  } catch (e) { showToast("⚠️ " + (e.message || "Erreur d'envoi.")); }
 }
 
 function showProposalSuccess() {
@@ -1458,9 +1124,6 @@ function resetProposalForm() {
   if (formSection) formSection.style.display = "block";
 }
 
-/* ============================================================
-   FLASHCARDS
-   ============================================================ */
 function openFlashcards() {
   flashcardList = getFilteredDefinitions();
   if (!flashcardList.length) { showToast("⚠️ Aucune définition disponible."); return; }
@@ -1473,7 +1136,6 @@ function renderFlashcard() {
   if (!d) return;
   const overlay = document.getElementById("flashcardOverlay");
   if (!overlay) return;
-
   const meta = document.getElementById("flashcardMeta");
   const term = document.getElementById("flashcardTerm");
   const def = document.getElementById("flashcardDef");
@@ -1484,7 +1146,6 @@ function renderFlashcard() {
   if (def) { def.textContent = d.def; def.style.display = "none"; }
   if (counter) counter.textContent = `${currentFlashcardIndex + 1} / ${flashcardList.length}`;
   if (reveal) { reveal.style.display = "block"; reveal.textContent = "Cliquez pour révéler"; }
-
   overlay.classList.add("open");
 }
 
@@ -1497,41 +1158,22 @@ function revealFlashcard() {
   reveal.textContent = hidden ? "Cliquez pour masquer" : "Cliquez pour révéler";
 }
 
-function nextFlashcard() {
-  if (!flashcardList.length) return;
-  currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcardList.length;
-  renderFlashcard();
-}
+function nextFlashcard() { if (!flashcardList.length) return; currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcardList.length; renderFlashcard(); }
+function prevFlashcard() { if (!flashcardList.length) return; currentFlashcardIndex = (currentFlashcardIndex - 1 + flashcardList.length) % flashcardList.length; renderFlashcard(); }
+function closeFlashcard(e) { if (e && e.target !== e.currentTarget) return; document.getElementById("flashcardOverlay")?.classList.remove("open"); }
 
-function prevFlashcard() {
-  if (!flashcardList.length) return;
-  currentFlashcardIndex = (currentFlashcardIndex - 1 + flashcardList.length) % flashcardList.length;
-  renderFlashcard();
-}
-
-function closeFlashcard(e) {
-  if (e && e.target !== e.currentTarget) return;
-  document.getElementById("flashcardOverlay")?.classList.remove("open");
-}
-
-/* ============================================================
-   DÉFINITION ALÉATOIRE
-   ============================================================ */
 function showRandomDefinition() {
   if (!definitions.length) { showToast("⚠️ Aucune définition."); return; }
   const modal = document.getElementById("randomModal");
   if (!modal) return;
-
   const d = definitions[Math.floor(Math.random() * definitions.length)];
   currentRandomId = d.id;
-
   const matiere = document.getElementById("randomMatiere");
   const term = document.getElementById("randomTerm");
   const def = document.getElementById("randomDef");
   if (matiere) matiere.textContent = d.matiere;
   if (term) term.textContent = d.term;
   if (def) def.textContent = d.def;
-
   modal.classList.add("open");
 }
 
@@ -1546,13 +1188,10 @@ function openRandomDefinition() {
 function revealDefinitionCard(id, term) {
   let card = document.querySelector(`.card[data-id="${id}"]`);
   if (!card) {
-    currentFilter = "all";
-    searchQuery = term;
+    currentFilter = "all"; searchQuery = term;
     const input = document.getElementById("searchInput");
     if (input) input.value = term;
-    updateSearchClear();
-    displayedCount = 0;
-    render();
+    updateSearchClear(); displayedCount = 0; render();
     card = document.querySelector(`.card[data-id="${id}"]`);
   }
   if (card) {
@@ -1562,39 +1201,13 @@ function revealDefinitionCard(id, term) {
   }
 }
 
-function closeRandomModal() {
-  document.getElementById("randomModal")?.classList.remove("open");
-}
+function closeRandomModal() { document.getElementById("randomModal")?.classList.remove("open"); }
 
-/* ============================================================
-   DÉFINITION DU JOUR (accueil)
-   ============================================================ */
-function renderDailyDefinition() {
-  const hero = document.querySelector(".hero");
-  if (!hero) return;
-  if (document.querySelector(".daily-def")) return;
-  const d = getDailyDefinition();
-  if (!d) return;
-  const div = document.createElement("div");
-  div.className = "daily-def";
-  div.innerHTML = `
-    <div class="daily-label">📅 Définition du jour</div>
-    <div class="daily-term">${escapeHTML(d.term)}</div>
-    <div class="daily-def-text">${escapeHTML(d.def)}</div>
-    <button class="daily-btn" onclick="jumpToTerm('${escapeHTML(d.term).replace(/'/g, "\\'")}')">Voir la fiche</button>
-  `;
-  hero.appendChild(div);
-}
-
-/* ============================================================
-   TOAST
-   ============================================================ */
 function showToast(message) {
   let toast = document.getElementById("toast");
   if (!toast) {
     toast = document.createElement("div");
-    toast.id = "toast";
-    toast.className = "toast";
+    toast.id = "toast"; toast.className = "toast";
     document.body.appendChild(toast);
   }
   toast.textContent = message;
@@ -1603,34 +1216,20 @@ function showToast(message) {
   toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-/* ============================================================
-   RACCOURCIS CLAVIER
-   ============================================================ */
 function initKeyboardShortcuts() {
   document.addEventListener("keydown", e => {
     const tag = document.activeElement.tagName;
     const focusOpen = document.getElementById("focusOverlay")?.classList.contains("open");
-
     if (focusOpen) {
       if (e.key === "ArrowRight") { e.preventDefault(); focusNext(); return; }
       if (e.key === "ArrowLeft") { e.preventDefault(); focusPrev(); return; }
       if (e.key === "Escape") { closeFocusMode(); return; }
       return;
     }
-
-    if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
-      e.preventDefault();
-      document.getElementById("searchInput")?.focus();
-    }
-    if (e.key.toLowerCase() === "r" && tag !== "INPUT" && tag !== "TEXTAREA") {
-      e.preventDefault();
-      showRandomDefinition();
-    }
+    if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); document.getElementById("searchInput")?.focus(); }
+    if (e.key.toLowerCase() === "r" && tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); showRandomDefinition(); }
     if (e.key === "Escape") {
-      closeFlashcard();
-      closeRandomModal();
-      closeAuthModal();
-      closeReportModal();
+      closeFlashcard(); closeRandomModal(); closeAuthModal(); closeReportModal();
       if (isDropdownOpen) {
         isDropdownOpen = false;
         document.getElementById("filterDropdownMenu")?.classList.remove("open");
@@ -1640,14 +1239,10 @@ function initKeyboardShortcuts() {
   });
 }
 
-/* ============================================================
-   SCROLL EFFECTS
-   ============================================================ */
 function initScrollEffects() {
   const scrollTopBtn = document.getElementById("scrollTop");
   const progress = document.getElementById("readingProgress");
   if (!scrollTopBtn && !progress) return;
-
   window.addEventListener("scroll", () => {
     const scroll = window.scrollY;
     if (scrollTopBtn) scrollTopBtn.classList.toggle("visible", scroll > 400);
@@ -1659,9 +1254,6 @@ function initScrollEffects() {
   }, { passive: true });
 }
 
-/* ============================================================
-   INSTALLATION PWA
-   ============================================================ */
 function initInstallPrompt() {
   window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault();
@@ -1673,10 +1265,7 @@ function initInstallPrompt() {
 }
 
 async function installApp() {
-  if (!deferredInstallPrompt) {
-    showToast("ℹ️ Utilise le menu Partager de ton navigateur pour ajouter LexiProf.");
-    return;
-  }
+  if (!deferredInstallPrompt) { showToast("ℹ️ Utilise le menu Partager de ton navigateur pour ajouter LexiProf."); return; }
   deferredInstallPrompt.prompt();
   const result = await deferredInstallPrompt.userChoice;
   if (result.outcome === "accepted") showToast("✅ LexiProf ajouté à l'écran d'accueil !");
@@ -1684,9 +1273,6 @@ async function installApp() {
   document.getElementById("installAppBtn")?.classList.remove("visible");
 }
 
-/* ============================================================
-   BIENVENUE
-   ============================================================ */
 function closeWelcome() {
   document.getElementById("welcomeBanner")?.classList.remove("show");
   localStorage.setItem(WELCOME_SEEN_KEY, "true");
@@ -1700,9 +1286,6 @@ function initWelcome() {
   setTimeout(() => banner.classList.remove("show"), 6000);
 }
 
-/* ============================================================
-   HERO ANIMÉ
-   ============================================================ */
 function initHeroAnimation() {
   const heroTitle = document.getElementById("heroTitle");
   if (!heroTitle) return;
@@ -1717,76 +1300,51 @@ function initHeroAnimation() {
   });
 }
 
-/* ============================================================
-   EASTER EGG KONAMI
-   ============================================================ */
 function initKonamiCode() {
-  const konamiSequence = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
-  let konamiIndex = 0;
-  let konamiActive = false;
-
+  const seq = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+  let idx = 0, active = false;
   document.addEventListener("keydown", e => {
-    if (konamiActive && e.key === "Escape") { deactivateKonami(); return; }
-    if (e.key === konamiSequence[konamiIndex]) {
-      konamiIndex++;
-      if (konamiIndex === konamiSequence.length) { activateKonami(); konamiIndex = 0; }
-    } else {
-      konamiIndex = 0;
-    }
+    if (active && e.key === "Escape") { deactivate(); return; }
+    if (e.key === seq[idx]) { idx++; if (idx === seq.length) { activate(); idx = 0; } }
+    else idx = 0;
   });
-
-  function activateKonami() {
-    konamiActive = true;
+  function activate() {
+    active = true;
     document.body.classList.add("retro-mode");
     showToast("🎮 MODE RETRO ACTIVÉ ! Appuie sur ESC pour quitter");
     try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.type = "square";
-      oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
-      oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
-      oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.4);
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = "square";
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
     } catch (e) {}
   }
-
-  function deactivateKonami() {
-    konamiActive = false;
-    document.body.classList.remove("retro-mode");
-    showToast("🎮 Mode retro désactivé");
-  }
+  function deactivate() { active = false; document.body.classList.remove("retro-mode"); showToast("🎮 Mode retro désactivé"); }
 }
 
-/* ============================================================
-   EVENT LISTENERS COMMUNS
-   ============================================================ */
 function initEventListeners() {
   document.getElementById("btnFlashcard")?.addEventListener("click", openFlashcards);
   document.getElementById("themeToggle")?.addEventListener("click", toggleTheme);
   document.getElementById("btnFocusMode")?.addEventListener("click", toggleFocusMode);
-
   const randomModal = document.getElementById("randomModal");
-  if (randomModal) {
-    randomModal.addEventListener("click", e => { if (e.target === randomModal) closeRandomModal(); });
-  }
-
-  const flashcardOverlay = document.getElementById("flashcardOverlay");
-  if (flashcardOverlay) {
-    flashcardOverlay.addEventListener("click", e => { if (e.target === flashcardOverlay) closeFlashcard(); });
-  }
+  if (randomModal) randomModal.addEventListener("click", e => { if (e.target === randomModal) closeRandomModal(); });
+  const flashOverlay = document.getElementById("flashcardOverlay");
+  if (flashOverlay) flashOverlay.addEventListener("click", e => { if (e.target === flashOverlay) closeFlashcard(); });
 }
 
-/* ============================================================
-   INITIALISATION
-   ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
+  // LOT A — préférences utilisateur d'abord (thème)
+  if (typeof applyUserPrefs === "function") applyUserPrefs();
+  else initTheme();
+
+  if (typeof renderAuthButton === "function") renderAuthButton();
+
   initHeroAnimation();
   initKonamiCode();
   initKeyboardShortcuts();
@@ -1803,13 +1361,7 @@ document.addEventListener("DOMContentLoaded", () => {
     hideLoader();
   }
 
-  if (document.getElementById("pwdGate")) {
-    initAdminPage();
-  }
-
-  if (document.querySelector(".hero")) {
-    setTimeout(renderDailyDefinition, 500);
-  }
+  if (document.getElementById("pwdGate")) initAdminPage();
 });
 
-console.log("📚 LexiProf v10 — app.js chargé");
+console.log("📚 LexiProf — app.js chargé (LOT A)")
