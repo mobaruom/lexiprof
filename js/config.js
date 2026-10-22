@@ -1,9 +1,6 @@
 /* ============================================================
    LEXIPROF — CONFIG
-   Version 100% statique (GitHub Pages), sans backend.
-   Base de données : Firebase Realtime Database, règles publiques
    ============================================================ */
-
 const FIREBASE_DB_URL = "https://lexiprof-44e50-default-rtdb.firebaseio.com";
 
 // Mot de passe admin local
@@ -22,16 +19,33 @@ const WELCOME_SEEN_KEY = "lexiprof_welcome_seen";
 const SEARCH_MISSES_KEY = "lexiprof_search_misses";
 const LAST_EXPORT_KEY = "lexiprof_last_export";
 
-// 🆕 Clés ajoutées
-const ID_COUNTER_KEY = "lexiprof_id_counter";        // compteur d'ID stable
-const DAILY_DEF_KEY = "lexiprof_daily_def";          // définition du jour
-const LAST_SEEN_KEY = "lexiprof_last_seen";          // badge "Nouveau"
+// Clés ajoutées
+const ID_COUNTER_KEY = "lexiprof_id_counter";
+const DAILY_DEF_KEY = "lexiprof_daily_def";
+const LAST_SEEN_KEY = "lexiprof_last_seen";
 
-// 🆕 Cache
-const CACHE_CONFIG = {
-  definitions_ttl: 3600000,  // 1h
-  search_ttl: 300000         // 5min
+// LOT A — Comptes utilisateur (local-first)
+const USERS_KEY = "lexiprof_users";
+const SESSION_KEY = "lexiprof_session";
+const USER_PREFS_KEY = "lexiprof_user_prefs";
+const PROPOSALS_SENT_KEY = "lexiprof_proposals_sent";
+
+// LOT A — Préférences par défaut
+const DEFAULT_PREFS = {
+  theme: "auto",
+  font: "default",
+  fontSize: 100,
+  language: "fr",
+  notifications: true,
+  reduceMotion: false,
+  accentColor: "default"
 };
 
-// 🆕 Seuil "Nouveau" : 14 jours
+// Cache
+const CACHE_CONFIG = {
+  definitions_ttl: 3600000,
+  search_ttl: 300000
+};
+
+// Seuil "Nouveau" : 14 jours
 const NEW_BADGE_DAYS = 14;
