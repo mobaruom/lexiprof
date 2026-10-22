@@ -1,39 +1,29 @@
 <!DOCTYPE html>
 <html lang='fr'>
-
 <head>
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <meta name='theme-color' content='#f7f5f0'>
   <meta name='description' content='LexiProf — Dictionnaire STMG moderne avec Management, Droit, Économie et RH.'>
-
   <link rel='manifest' href='manifest.json'>
   <title>LexiProf — Dictionnaire STMG </title>
-  <link rel='stylesheet' href='css/style.css?v=11'>
-
-  <link
-    href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
-    rel='stylesheet'
-  >
+  <link rel='stylesheet' href='css/style.css?v=13'>
+  <link href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap' rel='stylesheet'>
 </head>
-
 <body>
-  <!-- LOADER -->
   <div class='global-loader' id='globalLoader'>
     <img src='icons/IMG_6870.png' alt='LexiProf' class='loader-logo-img'>
     <div class='loader-bar'><span></span></div>
     <p>Chargement de LexiProf...</p>
   </div>
 
-  <!-- HEADER -->
   <header>
     <div class='logo'>
       <span class='logo-main'>LexiProf</span>
       <span class='logo-tag'>· STMG</span>
     </div>
-
     <div class='header-actions'>
-      <button class='btn-icon' id='authBtn' onclick='openAuthModal()' title='Connexion'>👤</button>
+      <button class='btn-icon' id='authBtn' title='Connexion'>👤</button>
       <button class='btn-icon' id='themeToggle' title='Mode sombre / clair' aria-label='Changer de thème'>🌙</button>
       <a class='btn-admin' href='app.html'>
         📖 <span class='btn-admin-text'>Dictionnaire</span>
@@ -41,20 +31,16 @@
     </div>
   </header>
 
-  <!-- MAIN -->
   <main>
-    <!-- HERO -->
     <section class='hero'>
       <h1 id='heroTitle'></h1>
       <p>Le dictionnaire de révision pensé pour les élèves de STMG. Management, Droit, Économie et RH, réunis dans une seule appli claire et rapide.</p>
-
       <div class='landing-cta-row'>
         <a class='btn-add landing-cta-primary' href='app.html'>📖 Ouvrir le dictionnaire</a>
         <a class='btn-secondary landing-cta-secondary' href='propose.html'>✍️ Proposer une définition</a>
       </div>
     </section>
 
-    <!-- MATIÈRES -->
     <section class='landing-subjects'>
       <div class='landing-subject-card' style='border-left:2px solid var(--mgt)'>
         <span class='matiere-badge badge-Management'>Management</span>
@@ -74,7 +60,6 @@
       </div>
     </section>
 
-    <!-- POURQUOI LEXIPROF -->
     <section class='landing-features'>
       <div class='landing-feature'>
         <span class='landing-feature-icon'>🔍</span>
@@ -90,68 +75,9 @@
           <p>Révise en mode question/réponse, à ton rythme.</p>
         </div>
       </div>
-      <div class='landing-feature'>
-        <span class='landing-feature-icon'>🎲</span>
-        <div>
-          <h3>Définition aléatoire</h3>
-          <p>Découvre un nouveau terme chaque jour.</p>
-        </div>
-      </div>
-      <div class='landing-feature'>
-        <span class='landing-feature-icon'>✍️</span>
-        <div>
-          <h3>Propose tes définitions</h3>
-          <p>Contribue au dictionnaire, ta proposition est relue avant publication.</p>
-        </div>
-      </div>
     </section>
   </main>
 
-  <!-- AUTH MODAL (COSMÉTIQUE — pas encore fonctionnel) -->
-  <div class='overlay' id='authOverlay' onclick='if(event.target===this)closeAuthModal()'>
-    <div class='auth-modal'>
-      <div class='auth-header'>
-        <h2>LexiProf</h2>
-        <button class='btn-close' onclick='closeAuthModal()' aria-label='Fermer'>×</button>
-      </div>
-      <div class='auth-tabs'>
-        <button class='auth-tab active' id='authTabLogin' onclick='switchAuthTab("login")'>Connexion</button>
-        <button class='auth-tab' id='authTabRegister' onclick='switchAuthTab("register")'>Inscription</button>
-      </div>
-      <div class='auth-body'>
-        <div class='auth-form active' id='loginForm'>
-          <div class='form-row'>
-            <label for='authEmail'>Email</label>
-            <input type='email' id='authEmail' placeholder='ton@email.fr'>
-          </div>
-          <div class='form-row'>
-            <label for='authPassword'>Mot de passe</label>
-            <input type='password' id='authPassword' placeholder='••••••••'>
-          </div>
-          <button class='btn-add' onclick='handleCosmeticAuth()'>Se connecter</button>
-          <p class='auth-soon-note'>Les comptes arrivent bientôt — le dictionnaire reste utilisable sans inscription.</p>
-        </div>
-        <div class='auth-form' id='registerForm'>
-          <div class='form-row'>
-            <label for='authDisplayName'>Nom d'affichage</label>
-            <input type='text' id='authDisplayName' placeholder='Ton prénom'>
-          </div>
-          <div class='form-row'>
-            <label for='authEmailReg'>Email</label>
-            <input type='email' id='authEmailReg' placeholder='ton@email.fr'>
-          </div>
-          <div class='form-row'>
-            <label for='authPasswordReg'>Mot de passe</label>
-            <input type='password' id='authPasswordReg' placeholder='••••••••'>
-          </div>
-          <button class='btn-add' onclick='handleCosmeticAuth()'>Créer un compte</button>
-          <p class='auth-soon-note'>Les comptes arrivent bientôt — le dictionnaire reste utilisable sans inscription.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MESSAGE BIENVENUE -->
   <div class='welcome-banner' id='welcomeBanner'>
     <div class='welcome-icon'>📚</div>
     <div class='welcome-content'>
@@ -161,27 +87,23 @@
     <button onclick='closeWelcome()' aria-label='Fermer'>×</button>
   </div>
 
-  <!-- INSTALLATION -->
   <button class='install-app-btn' id='installAppBtn' type='button'>
     <span>📱</span>
     <span>Installer LexiProf</span>
   </button>
 
-  <!-- TOAST -->
   <div class='toast' id='toast' role='status' aria-live='polite'></div>
 
-  <!-- FOOTER -->
   <footer>
     <strong>LexiProf</strong>
     <span>· Dictionnaire STMG</span>
     <br>
-    <small>Site en développement actif</small>
+    <small>Site en développement actif · <a href='profile.html'>Mon profil</a></small>
   </footer>
 
-  <!-- SCRIPTS -->
-  <script src='js/config.js?v=11'></script>
-  <script src='js/storage.js?v=11'></script>
-  <script src='js/app.js?v=11'></script>
+  <script src='js/config.js?v=13'></script>
+  <script src='js/storage.js?v=13'></script>
+  <script src='js/auth.js?v=13'></script>
+  <script src='js/app.js?v=13'></script>
 </body>
-
 </html>
