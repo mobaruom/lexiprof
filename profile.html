@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang='fr'>
+
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta name='theme-color' content='#f7f5f0'>
+  <meta name='description' content='LexiProf — Mon profil.'>
+  <meta name='robots' content='noindex'>
+
+  <link rel='manifest' href='manifest.json'>
+  <title>Mon profil — LexiProf</title>
+  <link rel='stylesheet' href='css/style.css?v=13'>
+
+  <link
+    href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
+    rel='stylesheet'
+  >
+</head>
+
+<body id='profilePage'>
+  <header>
+    <div class='logo'>
+      <a href='index.html' style='display:flex;align-items:baseline;gap:6px'>
+        <span class='logo-main'>LexiProf</span>
+        <span class='logo-tag'>· Profil</span>
+      </a>
+    </div>
+    <div class='header-actions'>
+      <button class='btn-icon' id='themeToggle' title='Mode sombre / clair' aria-label='Changer de thème'>🌙</button>
+      <a class='btn-admin' href='app.html'>📖 <span class='btn-admin-text'>Dictionnaire</span></a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ÉTAT DÉCONNECTÉ (Affiché par défaut pour éviter la page blanche) -->
+    <section id='profileGate'>
+      <div class='propose-intro'>
+        <h1>👤 Mon compte</h1>
+        <p>Connecte-toi ou crée un compte pour retrouver ta progression, tes favoris et tes préférences.</p>
+      </div>
+
+      <div class='auth-tabs' style='max-width:420px;margin:0 auto 18px'>
+        <button class='auth-tab active' id='tabLogin' onclick='switchProfileTab("login")'>Connexion</button>
+        <button class='auth-tab' id='tabRegister' onclick='switchProfileTab("register")'>Inscription</button>
+      </div>
+
+      <div class='form-section' id='formLogin' style='max-width:420px;margin:0 auto;display:block'>
+        <div class='form-row'>
+          <label for='loginEmail'>Email</label>
+          <input type='email' id='loginEmail' placeholder='ton@email.fr' autocomplete='email'>
+        </div>
+        <div class='form-row'>
+          <label for='loginPassword'>Mot de passe</label>
+          <input type='password' id='loginPassword' placeholder='••••••••' autocomplete='current-password'>
+        </div>
+        <button class='btn-add' onclick='profileLogin()'>Se connecter</button>
+      </div>
+
+      <div class='form-section' id='formRegister' style='max-width:420px;margin:0 auto;display:none'>
+        <div class='form-row'>
+          <label for='regName'>Nom d'affichage</label>
+          <input type='text' id='regName' placeholder='Ton prénom' autocomplete='nickname'>
+        </div>
+        <div class='form-row'>
+          <label for='regEmail'>Email</label>
+          <input type='email' id='regEmail' placeholder='ton@email.fr' autocomplete='email'>
+        </div>
+        <div class='form-row'>
+          <label for='regPassword'>Mot de passe <span>(6 caractères minimum)</span></label>
+          <input type='password' id='regPassword' placeholder='••••••••' autocomplete='new-password'>
+        </div>
+        <button class='btn-add' onclick='profileRegister()'>Créer un compte</button>
+      </div>
+    </section>
+
+    <!-- ÉTAT CONNECTÉ (Caché par défaut) -->
+    <section id='profileContent' style='display:none'>
+      <div class='profile-hero'>
+        <div class='profile-avatar' id='profileAvatar'></div>
+        <div class='profile-identity'>
+          <h1 id='profileName'></h1>
+          <p id='profileEmail'></p>
+          <small id='profileCreated'></small>
+        </div>
+      </div>
+
+      <div class='profile-stats'>
+        <div class='profile-stat'><strong id='statFavorites'>0</strong><span>Favoris</span></div>
+        <div class='profile-stat'><strong id='statMastered'>0</strong><span>Maîtrisées</span></div>
+        <div class='profile-stat'><strong id='statProposals'>0</strong><span>Propositions</span></div>
+      </div>
+
+      <section class='form-section'>
+        <h3>✏️ Modifier mon profil</h3>
+        <div class='form-row'>
+          <label for='editName'>Nom d'affichage</label>
+          <input type='text' id='editName'>
+        </div>
+        <div class='form-row'>
+          <label for='editEmail'>Email <span>(non modifiable)</span></label>
+          <input type='email' id='editEmail' disabled>
+        </div>
+        <div class='form-row'>
+          <label for='editAvatar'>Photo de profil <span>(max 2 Mo)</span></label>
+          <input type='file' id='editAvatar' accept='image/*'>
+        </div>
+        <button class='btn-add' onclick='saveProfileIdentity()'>💾 Enregistrer</button>
+      </section>
+
+      <section class='form-section'>
+        <h3>🎨 Préférences</h3>
+        <div class='form-row'>
+          <label for='prefTheme'>Thème</label>
+          <select id='prefTheme' onchange='onThemeChange()'>
+            <option value='auto'>Automatique (système)</option>
+            <option value='light'>Clair</option>
+            <option value='dark'>Sombre</option>
+          </select>
+        </div>
+        <div class='form-row'>
+          <label for='prefFontSize'>Taille du texte : <span id='prefFontSizeValue'>100%</span></label>
+          <input type='range' id='prefFontSize' min='85' max='130' step='5' oninput='onFontSizeChange()'>
+        </div>
+        <div class='form-row'>
+          <label style='display:flex;align-items:center;gap:8px'>
+            <input type='checkbox' id='prefNotifications' onchange='onNotificationsChange()'>
+            Recevoir les notifications
+          </label>
+        </div>
+        <div class='form-row'>
+          <label style='display:flex;align-items:center;gap:8px'>
+            <input type='checkbox' id='prefReduceMotion' onchange='onReduceMotionChange()'>
+            Réduire les animations
+          </label>
+        </div>
+      </section>
+
+      <section class='form-section'>
+        <h3>🔒 Sécurité</h3>
+        <div class='form-row'>
+          <label for='pwdCurrent'>Mot de passe actuel</label>
+          <input type='password' id='pwdCurrent' autocomplete='current-password'>
+        </div>
+        <div class='form-row'>
+          <label for='pwdNew'>Nouveau mot de passe</label>
+          <input type='password' id='pwdNew' autocomplete='new-password'>
+        </div>
+        <div class='form-row'>
+          <label for='pwdConfirm'>Confirmation</label>
+          <input type='password' id='pwdConfirm' autocomplete='new-password'>
+        </div>
+        <button class='btn-add' onclick='saveNewPassword()'>🔑 Changer le mot de passe</button>
+        <button class='btn-secondary' style='margin-top:8px' onclick='handleLogout()'>🚪 Se déconnecter</button>
+        <button class='btn-secondary' style='margin-top:8px;color:var(--danger);border-color:var(--danger-light)' onclick='handleDeleteAccount()'>🗑 Supprimer mon compte</button>
+      </section>
+
+      <section class='form-section'>
+        <h3>📦 Mes données (RGPD)</h3>
+        <p style='font-size:12px;color:var(--text-muted);margin-bottom:12px'>
+          Conformément à l'article 20 du RGPD, tu peux exporter toutes tes données à tout moment.
+        </p>
+        <button class='btn-add' onclick='handleExportRGPD()'>📦 Exporter mes données (JSON)</button>
+        <button class='btn-secondary' style='margin-top:8px' onclick='handleClearLocalData()'>🧹 Effacer mes données locales</button>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <strong>LexiProf</strong>
+    <span>· Mon profil</span>
+  </footer>
+
+  <div class='toast' id='toast' role='status' aria-live='polite'></div>
+
+  <script src='js/config.js?v=13'></script>
+  <script src='js/storage.js?v=13'></script>
+  <script src='js/auth.js?v=13'></script>
+  <script src='js/profile.js?v=13'></script>
+  <script src='js/app.js?v=13'></script>
+</body>
+
+</html>
