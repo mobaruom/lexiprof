@@ -9,7 +9,7 @@
 
   <link rel='manifest' href='manifest.json'>
   <title>Proposer une définition — LexiProf</title>
-  <link rel='stylesheet' href='css/style.css?v=12'>
+  <link rel='stylesheet' href='css/style.css?v=14'>
 
   <link
     href='https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap'
@@ -18,7 +18,6 @@
 </head>
 
 <body>
-  <!-- HEADER -->
   <header>
     <div class='logo'>
       <a href='index.html' style='display:flex;align-items:baseline;gap:6px'>
@@ -81,7 +80,6 @@
         <input type='email' id='pEmail' placeholder='ton@email.fr'>
       </div>
 
-      <!-- HONEYPOT ANTI-SPAM : champ invisible, un bot le remplira, un humain jamais -->
       <div class='propose-honeypot' aria-hidden='true'>
         <label for='pWebsite'>Site web</label>
         <input type='text' id='pWebsite' name='website' tabindex='-1' autocomplete='off'>
@@ -90,7 +88,6 @@
       <button class='btn-add' onclick='handleProposalSubmit()'>📤 Envoyer ma proposition</button>
     </section>
 
-    <!-- ÉTAT SUCCÈS -->
     <section class='form-section' id='proposeSuccessSection' style='display:none;text-align:center'>
       <h3 style='text-transform:none;font-size:16px;color:var(--success)'>✅ Proposition envoyée !</h3>
       <p style='color:var(--text-soft);font-size:13px;margin-top:8px'>Merci, elle sera examinée avant publication.</p>
@@ -98,19 +95,18 @@
     </section>
   </main>
 
-  <!-- TOAST -->
   <div class='toast' id='toast' role='status' aria-live='polite'></div>
 
-  <!-- FOOTER -->
   <footer>
     <strong>LexiProf</strong>
     <span>· Dictionnaire STMG</span>
   </footer>
 
   <!-- SCRIPTS -->
-  <script src='js/config.js?v=12'></script>
-  <script src='js/storage.js?v=12'></script>
-  <script src='js/app.js?v=12'></script>
+  <script src='js/config.js?v=14'></script>
+  <script src='js/storage.js?v=14'></script>
+  <script src='js/auth.js?v=14'></script>
+  <script src='js/app.js?v=14'></script>
 </body>
 
 </html>
