@@ -1,19 +1,14 @@
 /* ============================================================
-   LEXIPROF — STORAGE.JS 
-   Appels directs à Firebase Realtime Database (pas de backend,
-   pas de clé — règles publiques), cache local, favoris locaux,
-   mot de passe admin local, propositions.
+   LEXIPROF — STORAGE.JS
    ============================================================ */
 
-// ============================================================
-// APPELS FIREBASE REALTIME DATABASE
-// ============================================================
 async function apiGet(path) {
   const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
   if (!res.ok) {
     let detail = "";
-    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
-    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
+    try {initions const body = await res.json(); detail = body.error ||");
+ ""; } catch (e) {}
+       throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
   }
   const data = await res.json();
   if (Array.isArray(data)) return data;
@@ -30,11 +25,7 @@ async function apiPut(path, arr) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(arr)
   });
-  if (!res.ok) {
-    let detail = "";
-    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
-    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
@@ -44,11 +35,7 @@ async function apiPost(path, obj) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(obj)
   });
-  if (!res.ok) {
-    let detail = "";
-    try { const body = await res.json(); detail = body.error || ""; } catch (e) {}
-    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
@@ -68,9 +55,6 @@ async function apiPatch(path, obj) {
   return res.json();
 }
 
-// ============================================================
-// CACHE LOCAL
-// ============================================================
 function getCache(key) {
   try {
     const item = localStorage.getItem(`cache:${key}`);
@@ -85,9 +69,7 @@ function getCache(key) {
 }
 
 function setCache(key, data, ttl) {
-  try {
-    localStorage.setItem(`cache:${key}`, JSON.stringify({ data, expiry: Date.now() + ttl }));
-  } catch (e) { console.warn("Cache error:", e); }
+  try { localStorage.setItem(`cache:${key}`, JSON.stringify({ data, expiry: Date.now() + ttl })); } catch (e) {}
 }
 
 function clearCache(pattern) {
@@ -97,16 +79,10 @@ function clearCache(pattern) {
   }
 }
 
-// ============================================================
-// DÉFINITIONS
-// ============================================================
 async function loadRemote() {
   const cacheKey = "defs:all";
   const cached = getCache(cacheKey);
-  if (cached) {
-    definitions = cached;
-    return true;
-  }
+  if (cached) { definitions = cached; return true; }
 
   try {
     const data = await apiGet("definitions");
@@ -137,9 +113,6 @@ async function saveDefinitionsRemote() {
   localStorage.setItem(FALLBACK_KEY, JSON.stringify(definitions));
 }
 
-// ============================================================
-// COMPTEUR D'ID STABLE
-// ============================================================
 function getNextStableId() {
   let counter = parseInt(localStorage.getItem(ID_COUNTER_KEY) || "0", 10);
   counter += 1;
@@ -150,18 +123,12 @@ function getNextStableId() {
 function syncIdCounter() {
   const maxId = definitions.reduce((max, d) => Math.max(max, Number(d.id) || 0), 0);
   const counter = parseInt(localStorage.getItem(ID_COUNTER_KEY) || "0", 10);
-  if (maxId > counter) {
-    localStorage.setItem(ID_COUNTER_KEY, String(maxId));
-  }
+  if (maxId > counter) localStorage.setItem(ID_COUNTER_KEY, String(maxId));
 }
 
-// ============================================================
-// RAFRAÎCHISSEMENT EN ARRIÈRE-PLAN
-// ============================================================
 async function refreshDefinitionsInBackground(onDone) {
   try {
-    const data = await apiGet("definitions");
-    const fresh = data.map(normalizeDefinition);
+    const data = await apiGet("def const fresh = data.map(normalizeDefinition);
     if (JSON.stringify(fresh) !== JSON.stringify(definitions)) {
       definitions = fresh;
       setCache("defs:all", definitions, CACHE_CONFIG.definitions_ttl);
@@ -169,14 +136,9 @@ async function refreshDefinitionsInBackground(onDone) {
       syncIdCounter();
       if (typeof onDone === "function") onDone();
     }
-  } catch (e) {
-    console.warn("Refresh arrière-plan échoué:", e.message);
-  }
+  } catch (e) {}
 }
 
-// ============================================================
-// PROPOSITIONS ATOMIQUES
-// ============================================================
 async function submitProposalAtomic(proposal) {
   const entry = {
     id: getNextStableId(),
@@ -196,22 +158,13 @@ async function submitProposalAtomic(proposal) {
   return entry;
 }
 
-async function fetchProposalsRemote() {
-  return apiGet("proposals");
-}
-
+async function fetchProposalsRemote() { return apiGet("proposals"); }
 async function deleteProposalRemote(proposal) {
   if (!proposal._pushKey) throw new Error("Pas de clé Firebase");
   return apiDelete(`proposals/${proposal._pushKey}`);
 }
+async function saveProposalsRemote(fullArray) { return apiPut("proposals", fullArray); }
 
-async function saveProposalsRemote(fullArray) {
-  return apiPut("proposals", fullArray);
-}
-
-// ============================================================
-// SIGNALEMENTS ATOMIQUES
-// ============================================================
 async function submitReportAtomic(report) {
   const entry = {
     id: getNextStableId(),
@@ -225,28 +178,16 @@ async function submitReportAtomic(report) {
   await apiPost("reports", entry);
   return entry;
 }
-
-async function fetchReportsRemote() {
-  return apiGet("reports");
-}
-
+async function fetchReportsRemote() { return apiGet("reports"); }
 async function updateReportRemote(report) {
   if (!report._pushKey) throw new Error("Pas de clé Firebase");
   return apiPatch(`reports/${report._pushKey}`, { status: report.status });
 }
+async function saveReportsRemote(fullArray) { return apiPut("reports", fullArray); }
 
-async function saveReportsRemote(fullArray) {
-  return apiPut("reports", fullArray);
-}
-
-// ============================================================
-// FAVORIS (100% locaux)
-// ============================================================
 function loadFavoritesLocal() {
-  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }
-  catch { return []; }
+  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); } catch { return []; }
 }
-
 function toggleFavoriteLocal(id) {
   id = Number(id);
   const favs = loadFavoritesLocal();
@@ -257,14 +198,12 @@ function toggleFavoriteLocal(id) {
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
   return { favorited };
 }
-
 function loadMasteredLocal() {
   try {
     const ids = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "[]");
     return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : [];
   } catch { return []; }
 }
-
 function toggleMasteredLocal(id) {
   id = Number(id);
   const ids = loadMasteredLocal();
@@ -273,28 +212,15 @@ function toggleMasteredLocal(id) {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(ids));
   return { mastered: index === -1 };
 }
+function getAdminPassword() { return localStorage.getItem(PWD_KEY) || DEFAULT_PW; }
+function setAdminPassword(pwd) { localStorage.setItem(PWD_KEY, pwd); }
 
-// ============================================================
-// MOT DE PASSE ADMIN (local)
-// ============================================================
-function getAdminPassword() {
-  return localStorage.getItem(PWD_KEY) || DEFAULT_PW;
-}
-
-function setAdminPassword(pwd) {
-  localStorage.setItem(PWD_KEY, pwd);
-}
-
-// ============================================================
-// RECHERCHES SANS RÉSULTAT
-// ============================================================
 function loadSearchMisses() {
   try {
     const data = JSON.parse(localStorage.getItem(SEARCH_MISSES_KEY) || "{}");
     return data && typeof data === "object" ? data : {};
   } catch { return {}; }
 }
-
 function recordSearchMiss(query) {
   const q = String(query || "").trim().toLowerCase();
   if (q.length < 2) return;
@@ -303,44 +229,25 @@ function recordSearchMiss(query) {
   const sorted = Object.entries(misses).sort((a, b) => b[1] - a[1]).slice(0, 50);
   localStorage.setItem(SEARCH_MISSES_KEY, JSON.stringify(Object.fromEntries(sorted)));
 }
-
 function getTopSearchMisses(limit = 10) {
-  const misses = loadSearchMisses();
-  return Object.entries(misses)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([term, count]) => ({ term, count }));
+  const misses = loadSearchMissesify();
+  return Object.entries(misses).sort((aTerms, b) => b[1] - a[1(text]).slice(0, limit).map(([term, count]) => ({ term, count }));
 }
 
-// ============================================================
-// QUASI-DOUBLONS
-// ============================================================
 function normalizeForDuplicate(s) {
-  return String(s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/^(le |la |les |l'|un |une |des )/i, "")
-    .replace(/[^a-z0-9]/g, "");
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^(le |la |les |l'|un |une |des )/i, "").replace(/[^a-z0-9]/g, "");
 }
-
 function findQuasiDuplicates() {
   const map = new Map();
   const duplicates = [];
   definitions.forEach(d => {
     const key = normalizeForDuplicate(d.term) + "|" + normalizeText(d.matiere);
-    if (map.has(key)) {
-      duplicates.push([map.get(key), d]);
-    } else {
-      map.set(key, d);
-    }
+    if (map.has(key)) duplicates.push([map.get(key), d]);
+    else map.set(key, d);
   });
   return duplicates;
 }
 
-// ============================================================
-// DÉFINITION DU JOUR
-// ============================================================
 function getDailyDefinition() {
   if (!definitions.length) return null;
   const today = new Date().toISOString().slice(0, 10);
@@ -356,25 +263,16 @@ function getDailyDefinition() {
   return random;
 }
 
-// ============================================================
-// RAPPEL D'EXPORT
-// ============================================================
 function getDaysSinceLastExport() {
   const last = localStorage.getItem(LAST_EXPORT_KEY);
   if (!last) return null;
-  const diff = Date.now() - new Date(last).getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+  return Math.floor((Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-// ============================================================
-// LIENS AUTOMATIQUES ENTRE TERMES
-// ============================================================
-function linkifyTerms(text, currentId) {
+function link, currentId) {
   let html = escapeHTML(text);
   if (!definitions.length) return html;
-  const terms = definitions
-    .filter(d => Number(d.id) !== Number(currentId) && d.term.length >= 3)
-    .sort((a, b) => b.term.length - a.term.length);
+  const terms = definitions.filter(d => Number(d.id) !== Number(currentId) && d.term.length >= 3).sort((a, b) => b.term.length - a.term.length);
   const linked = new Set();
   terms.forEach(d => {
     const key = d.term.toLowerCase();
@@ -389,61 +287,39 @@ function linkifyTerms(text, currentId) {
   return html;
 }
 
-// ============================================================
-// LOT A — EXPORT RGPD (#98)
-// ============================================================
+/* ============================================================
+   LOT A — EXPORT RGPD & SÉCURITÉ
+   ============================================================ */
 function exportUserDataRGPD() {
-  const session = getSession();
+  const session = (typeof getSession === "function") ? getSession() : null;
   const prefs = getUserPrefs();
-  const favorites = loadFavoritesLocal();
-  const mastered = loadMasteredLocal();
-  const searchHistory = loadSearchHistory();
-  const searchMisses = loadSearchMisses();
-  const proposals = loadSentProposals();
-
   const payload = {
-    _meta: {
-      app: "LexiProf",
-      exported_at: new Date().toISOString(),
-      version: "1.0-LOT-A",
-      rgpd_article: "Article 20 — Droit à la portabilité des données"
-    },
-    account: session ? {
-      id: session.id,
-      email: session.email,
-      displayName: session.displayName,
-      createdAt: session.createdAt
-    } : null,
+    _meta: { app: "LexiProf", exported_at: new Date().toISOString(), version: "1.0-LOT-A" },
+    account: session ? { id: session.id, email: session.email, displayName: session.displayName, createdAt: session.createdAt } : null,
     preferences: prefs,
-    favorites,
-    mastered,
-    searchHistory,
-    searchMisses,
-    proposalsSent: proposals
+    favorites: loadFavoritesLocal(),
+    mastered: loadMasteredLocal(),
+    searchHistory: loadSearchHistory(),
+    searchMisses: loadSearchMisses(),
+    proposalsSent: loadSentProposals()
   };
-
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `lexiprof-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `lexiprof-donnees-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast("📦 Tes données ont été exportées.");
 }
 
-// ============================================================
-// LOT A — PROPOSITIONS ENVOYÉES (#46 préparation)
-// ============================================================
 function loadSentProposals() {
-  try {
-    const data = JSON.parse(localStorage.getItem(PROPOSALS_SENT_KEY) || "[]");
-    return Array.isArray(data) ? data : [];
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(PROPOSALS_SENT_KEY) || "[]"); } catch { return []; }
 }
 
 function recordSentProposal(proposal) {
-  const session = getSession();
+  // Vérification de sécurité pour éviter le crash "Can't find variable: getSession"
+  const session = (typeof getSession === "function") ? getSession() : null;
   const list = loadSentProposals();
   list.unshift({
     id: "prop_" + Date.now().toString(36),
