@@ -1,15 +1,28 @@
 /* ============================================================
-   LEXIPROF — PROFILE.JS (LOT A)
+   LEXIPROF — PROFILE.JS (LOT A - Version Blindée)
    ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!document.getElementById("profilePage")) return;
-  applyUserPrefs();
-  renderProfile();
+  
+  try {
+    if (typeof applyUserPrefs === "function") applyUserPrefs();
+    renderProfile();
+  } catch (e) {
+    console.error("Erreur d'initialisation du profil:", e);
+    // En cas d'erreur, on affiche le formulaire de secours
+    const gate = document.getElementById("profileGate");
+    if (gate) gate.style.display = "block";
+  }
 });
 
 function renderProfile() {
-  const session = getSession();
+  // Sécurité : on vérifie que la fonction getSession existe
+  let session = null;
+  if (typeof getSession === "function") {
+    session = getSession();
+  }
+
   const gate = document.getElementById("profileGate");
   const content = document.getElementById("profileContent");
 
@@ -18,6 +31,7 @@ function renderProfile() {
     if (content) content.style.display = "none";
     return;
   }
+  
   if (gate) gate.style.display = "none";
   if (content) content.style.display = "block";
 
@@ -28,25 +42,31 @@ function renderProfile() {
       ? `<img src="${session.avatar}" alt="">`
       : `<span>${initial}</span>`;
   }
-  document.getElementById("profileName").textContent = session.displayName;
-  document.getElementById("profileEmail").textContent = session.email;
-  const created = new Date(session.createdAt);
-  document.getElementById("profileCreated").textContent =
-    "Membre depuis le " + created.toLocaleDateString("fr-FR");
+  
+  const nameEl = document.getElementById("profileName");
+  const emailEl = document.getElementById("profileEmail");
+  const createdEl = document.getElementById("profileCreated");
+  
+  if (nameEl) nameEl.textContent = session.displayName;
+  if (emailEl) emailEl.textContent = session.email;
+  if (createdEl) {
+    const created = new Date(session.createdAt);
+    createdEl.textContent = "Membre depuis le " + created.toLocaleDateString("fr-FR");
+  }
 
-  document.getElementById("editName").value = session.displayName;
-  document.getElementById("editEmail").value = session.email;
+  if (document.getElementById("editName")) document.getElementById("editName").value = session.displayName;
+  if (document.getElementById("editEmail")) document.getElementById("editEmail").value = session.email;
 
   const prefs = getUserPrefs();
-  document.getElementById("prefTheme").value = prefs.theme;
-  document.getElementById("prefFontSize").value = prefs.fontSize;
-  document.getElementById("prefFontSizeValue").textContent = prefs.fontSize + "%";
-  document.getElementById("prefNotifications").checked = prefs.notifications;
-  document.getElementById("prefReduceMotion").checked = prefs.reduceMotion;
+  if (document.getElementById("prefTheme")) document.getElementById("prefTheme").value = prefs.theme;
+  if (document.getElementById("prefFontSize")) document.getElementById("prefFontSize").value = prefs.fontSize;
+  if (document.getElementById("prefFontSizeValue")) document.getElementById("prefFontSizeValue").textContent = prefs.fontSize + "%";
+  if (document.getElementById("prefNotifications")) document.getElementById("prefNotifications").checked = prefs.notifications;
+  if (document.getElementById("prefReduceMotion")) document.getElementById("prefReduceMotion").checked = prefs.reduceMotion;
 
-  document.getElementById("statFavorites").textContent = loadFavoritesLocal().length;
-  document.getElementById("statMastered").textContent = loadMasteredLocal().length;
-  document.getElementById("statProposals").textContent = loadSentProposals().length;
+  if (document.getElementById("statFavorites")) document.getElementById("statFavorites").textContent = loadFavoritesLocal().length;
+  if (document.getElementById("statMastered")) document.getElementById("statMastered").textContent = loadMasteredLocal().length;
+  if (document.getElementById("statProposals")) document.getElementById("statProposals").textContent = loadSentProposals().length;
 }
 
 async function saveProfileIdentity() {
@@ -82,7 +102,7 @@ function fileToBase64(file) {
 
 function savePreference(key, value) {
   saveUserPrefs({ [key]: value });
-  applyUserPrefs();
+  if (typeof applyUserPrefs === "function") applyUserPrefs();
 
   if (key === "theme") {
     if (value === "dark") localStorage.setItem(THEME_KEY, "dark");
@@ -163,15 +183,15 @@ function switchProfileTab(tab) {
   const formLogin = document.getElementById("formLogin");
   const formRegister = document.getElementById("formRegister");
   if (tab === "login") {
-    tabLogin?.classList.add("active");
-    tabRegister?.classList.remove("active");
-    formLogin?.style.display = "block";
-    formRegister?.style.display = "none";
+    if (tabLogin) tabLogin.classList.add("active");
+    if (tabRegister) tabRegister.classList.remove("active");
+    if (formLogin) formLogin.style.display = "block";
+    if (formRegister) formRegister.style.display = "none";
   } else {
-    tabLogin?.classList.remove("active");
-    tabRegister?.classList.add("active");
-    formLogin?.style.display = "none";
-    formRegister?.style.display = "block";
+    if (tabLogin) tabLogin.classList.remove("active");
+    if (tabRegister) tabRegister.classList.add("active");
+    if (formLogin) formLogin.style.display = "none";
+    if (formRegister) formRegister.style.display = "block";
   }
 }
 
