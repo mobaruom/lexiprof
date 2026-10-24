@@ -2,13 +2,35 @@
    LEXIPROF — STORAGE.JS
    ============================================================ */
 
+async function apiFetch(path, options = {}) {
+  const controller = new AbortController();
+  const timeoutMs = options.method && options.method !== "GET" ? 10000 : 7000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
+      ...options,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Délai d'attente Firebase dépassé.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function apiGet(path) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
+  const res = await apiFetch(path);
   if (!res.ok) {
     let detail = "";
-    try {initions const body = await res.json(); detail = body.error ||");
- ""; } catch (e) {}
-       throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
+    try {
+      const body = await res.json();
+      detail = body.error || "";
+    } catch (e) {}
+    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
   }
   const data = await res.json();
   if (Array.isArray(data)) return data;
@@ -20,7 +42,7 @@ async function apiGet(path) {
 }
 
 async function apiPut(path, arr) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
+  const res = await apiFetch(path, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(arr)
@@ -30,7 +52,7 @@ async function apiPut(path, arr) {
 }
 
 async function apiPost(path, obj) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
+  const res = await apiFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(obj)
@@ -40,13 +62,13 @@ async function apiPost(path, obj) {
 }
 
 async function apiDelete(path) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, { method: "DELETE" });
+  const res = await apiFetch(path, { method: "DELETE" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return true;
 }
 
 async function apiPatch(path, obj) {
-  const res = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
+  const res = await apiFetch(path, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(obj)
@@ -128,7 +150,8 @@ function syncIdCounter() {
 
 async function refreshDefinitionsInBackground(onDone) {
   try {
-    const data = await apiGet("def const fresh = data.map(normalizeDefinition);
+    const data = await apiGet("definitions");
+    const fresh = data.map(normalizeDefinition);
     if (JSON.stringify(fresh) !== JSON.stringify(definitions)) {
       definitions = fresh;
       setCache("defs:all", definitions, CACHE_CONFIG.definitions_ttl);
@@ -230,8 +253,11 @@ function recordSearchMiss(query) {
   localStorage.setItem(SEARCH_MISSES_KEY, JSON.stringify(Object.fromEntries(sorted)));
 }
 function getTopSearchMisses(limit = 10) {
-  const misses = loadSearchMissesify();
-  return Object.entries(misses).sort((aTerms, b) => b[1] - a[1(text]).slice(0, limit).map(([term, count]) => ({ term, count }));
+  const misses = loadSearchMisses();
+  return Object.entries(misses)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([term, count]) => ({ term, count }));
 }
 
 function normalizeForDuplicate(s) {
@@ -269,21 +295,32 @@ function getDaysSinceLastExport() {
   return Math.floor((Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function link, currentId) {
+function linkifyTerms(text, currentId) {
   let html = escapeHTML(text);
   if (!definitions.length) return html;
-  const terms = definitions.filter(d => Number(d.id) !== Number(currentId) && d.term.length >= 3).sort((a, b) => b.term.length - a.term.length);
-  const linked = new Set();
+
+  const terms = definitions
+    .filter(d => Number(d.id) !== Number(currentId) && d.term.length >= 3)
+    .sort((a, b) => b.term.length - a.term.length);
+  const links = [];
+
   terms.forEach(d => {
-    const key = d.term.toLowerCase();
-    if (linked.has(key)) return;
     const escaped = d.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`\\b(${escaped})\\b`, "gi");
     if (regex.test(html)) {
-      html = html.replace(regex, `<a href="#" class="term-link" onclick="jumpToTerm('${escapeHTML(d.term).replace(/'/g, "\\'")}');return false;">$1</a>`);
-      linked.add(key);
+      html = html.replace(regex, (match) => {
+        const token = `\u0000LEXIPROF_LINK_${links.length}\u0000`;
+        links.push({ token, term: d.term, label: match });
+        return token;
+      });
     }
   });
+
+  links.forEach(({ token, term, label }) => {
+    const anchor = `<a href="#" class="term-link" data-term="${escapeHTML(term)}" onclick="jumpToTerm(this.dataset.term);return false;">${label}</a>`;
+    html = html.split(token).join(anchor);
+  });
+
   return html;
 }
 
