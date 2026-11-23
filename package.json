@@ -1,0 +1,9 @@
+{
+  "name": "lexiprof",
+  "private": true,
+  "description": "LexiProf — site statique (GitHub Pages) + Firebase. Aucun build.",
+  "scripts": {
+    "test": "node tests/streak.test.js && node tests/quiz.test.js && node tests/import.test.js && node tests/pdf.test.js && node tests/coach.test.js",
+    "test:e2e": "NODE_PATH=$PWD/node_modules OUT=/tmp node tests/e2e.js"
+  }
+}

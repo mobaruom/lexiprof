@@ -1,0 +1,6 @@
+Polices d'accessibilité (auto-hébergées, aucune requête vers Google).
+Dépose ici, au format woff2 (licence OFL, libres) :
+  atkinson-400.woff2, atkinson-700.woff2   (Atkinson Hyperlegible)
+  opendyslexic-400.woff2, opendyslexic-700.woff2   (OpenDyslexic)
+Sources : paquets npm @fontsource/atkinson-hyperlegible et @fontsource/opendyslexic (dossier files/, variante latin).
+Sans ces fichiers, le site utilise des polices système lisibles (Verdana / Comic Sans), l'option reste fonctionnelle.
